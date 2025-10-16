@@ -1,0 +1,3 @@
+[submodule "external/microros_pico"]
+	path = external/microros_pico
+	url = https://github.com/micro-ROS/micro_ros_raspberrypi_pico_sdk
