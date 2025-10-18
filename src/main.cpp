@@ -1,3 +1,5 @@
+#include "main.hpp"
+
 #include <stdio.h>
 
 #include <rcl/rcl.h>
@@ -8,21 +10,22 @@
 #include <rmw_microros/rmw_microros.h>
 
 #include "pico/stdlib.h"
+extern "C" {
 #include "pico_uart_transports.h"
-
-const uint LED_PIN = 25;
-
-rcl_publisher_t publisher;
-std_msgs__msg__Int32 msg;
-
-void timer_callback(rcl_timer_t *timer, int64_t last_call_time)
-{
-    rcl_ret_t ret = rcl_publish(&publisher, &msg, NULL);
-    msg.data++;
 }
 
-int main()
+Main* Main::instance_ = nullptr;
+
+void Main::timer_callback_(rcl_timer_t *timer_, int64_t last_call_time)
 {
+    if (!instance_) return;
+    rcl_ret_t ret = rcl_publish(&instance_->publisher_, &instance_->msg_, NULL);
+    instance_->msg_.data++;
+}
+
+Main::Main()
+{
+    instance_ = this;
     rmw_uros_set_custom_transport(
         true,
         NULL,
@@ -35,13 +38,7 @@ int main()
     gpio_init(LED_PIN);
     gpio_set_dir(LED_PIN, GPIO_OUT);
 
-    rcl_timer_t timer;
-    rcl_node_t node;
-    rcl_allocator_t allocator;
-    rclc_support_t support;
-    rclc_executor_t executor;
-
-    allocator = rcl_get_default_allocator();
+    allocator_ = rcl_get_default_allocator();
 
     // Wait for agent successful ping for 2 minutes.
     const int timeout_ms = 1000; 
@@ -52,33 +49,46 @@ int main()
     if (ret != RCL_RET_OK)
     {
         // Unreachable agent, exiting program.
-        return ret;
+        while(1)
+        {
+        }
     }
 
-    rclc_support_init(&support, 0, NULL, &allocator);
+    rclc_support_init(&support_, 0, NULL, &allocator_);
 
-    rclc_node_init_default(&node, "pico_node", "", &support);
+    rclc_node_init_default(&node_, "pico_node", "", &support_);
     rclc_publisher_init_default(
-        &publisher,
-        &node,
+        &publisher_,
+        &node_,
         ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Int32),
-        "pico_publisher");
+        "pico_number_publisher");
 
     rclc_timer_init_default(
-        &timer,
-        &support,
+        &timer_,
+        &support_,
         RCL_MS_TO_NS(1000),
-        timer_callback);
+        Main::timer_callback_);
 
-    rclc_executor_init(&executor, &support.context, 1, &allocator);
-    rclc_executor_add_timer(&executor, &timer);
+    rclc_executor_init(&this->executor_, &support_.context, 1, &allocator_);
+    rclc_executor_add_timer(&this->executor_, &timer_);
 
     gpio_put(LED_PIN, 1);
 
-    msg.data = 0;
+    this->msg_.data = 0;
+}
+
+void Main::spin()
+{
+    rclc_executor_spin_some(&this->executor_, RCL_MS_TO_NS(100));
+}
+
+int main()
+{
+    Main app;
     while (true)
     {
-        rclc_executor_spin_some(&executor, RCL_MS_TO_NS(100));
+        app.spin();
     }
     return 0;
 }
+
