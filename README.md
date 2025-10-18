@@ -18,6 +18,43 @@ micro-ROS Agent をビルドする話を書く
 
 ROS_LOCALHOST_ONLY と ROS_DOMAIN_ID の設定値の話も書かないとだめかも
 
+# Usage
+1. micro-ROS Agent の立ち上げ
+    ```
+    ros2 run micro_ros_agent micro_ros_agent serial -b 115200 --dev /dev/ttyACM0 -v6
+    ```
+
+2. デューティ比トピックの確認
+    デューティ比の値を確認できる（単位は `%` ）
+    ```
+    ros2 topic echo /pico/duty
+    ```
+3. デューティ比の変更
+    ```
+    ros2 topic pub /pico/pwm std_msgs/msg/Float32 "data: -100"  # 逆転 100% Duty
+    ros2 topic pub /pico/pwm std_msgs/msg/Float32 "data: -50"   # 逆転 50% Duty
+    ros2 topic pub /pico/pwm std_msgs/msg/Float32 "data: 0"     # 空転
+    ros2 topic pub /pico/pwm std_msgs/msg/Float32 "data: 50"    # 正転 50% Duty
+    ros2 topic pub /pico/pwm std_msgs/msg/Float32 "data: 100"   # 正転 100% Duty
+    ```
+    使用する ESC は `50%` で空転
+
+# Node List
+```
+/pico_node
+  Subscribers:
+    /pico/pwm: std_msgs/msg/Float32
+  Publishers:
+    /pico/duty: std_msgs/msg/Float32
+  Service Servers:
+
+  Service Clients:
+
+  Action Servers:
+
+  Action Clients:
+```
+
 # ライセンス
 MIT にしたい
 

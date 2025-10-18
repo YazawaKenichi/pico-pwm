@@ -7,20 +7,46 @@
 #include <rclc/rclc.h>
 #include <rclc/executor.h>
 #include <std_msgs/msg/int32.h>
+#include <std_msgs/msg/float32.h>
 #include <rmw_microros/rmw_microros.h>
 
 #include "pico/stdlib.h"
+#include "hardware/pwm.h"
+
 extern "C" {
 #include "pico_uart_transports.h"
 }
+
+#define WRAP_12BIT 4095
+#define HAMMER_R_PIN 2
+#define HAMMER_L_PIN 3
 
 Main* Main::instance_ = nullptr;
 
 void Main::timer_callback_(rcl_timer_t *timer_, int64_t last_call_time)
 {
     if (!instance_) return;
-    rcl_ret_t ret = rcl_publish(&instance_->publisher_, &instance_->msg_, NULL);
-    instance_->msg_.data++;
+    instance_->pub_msg_.data = instance_->duty_;    //! 0.0f ~ 1.0f
+    rcl_ret_t ret = rcl_publish(&instance_->publisher_, &instance_->pub_msg_, NULL);
+}
+
+void Main::subscription_callback_(const void * msgin)
+{
+    if (!msgin) return;
+    const std_msgs__msg__Float32 * msg = static_cast<const std_msgs__msg__Float32 *>(msgin);    //! -100.0f ~ 100.0f
+    float duty = 50 + (msg->data / 2);  //! 0.0f ~ 100.0f
+    if(duty < 0)
+    {
+        duty = 0.0f;
+    }
+    if(duty > 100)
+    {
+        duty = 100.0f;
+    }
+    instance_->duty_ = duty / 100.0f;   //! 0.0f ~ 1.0f
+
+    pwm_set_gpio_level(HAMMER_R_PIN, (uint16_t)((duty / 100.0f) * WRAP_12BIT));
+    pwm_set_gpio_level(HAMMER_L_PIN, (uint16_t)((duty / 100.0f) * WRAP_12BIT));
 }
 
 Main::Main()
@@ -37,6 +63,16 @@ Main::Main()
 
     gpio_init(LED_PIN);
     gpio_set_dir(LED_PIN, GPIO_OUT);
+
+    gpio_set_function(HAMMER_R_PIN, GPIO_FUNC_PWM);
+    gpio_set_function(HAMMER_L_PIN, GPIO_FUNC_PWM);
+    uint slice_num_r = pwm_gpio_to_slice_num(HAMMER_R_PIN);
+    uint slice_num_l = pwm_gpio_to_slice_num(HAMMER_L_PIN);
+    pwm_config cfg = pwm_get_default_config();
+    pwm_config_set_clkdiv(&cfg, 30.5f);
+    pwm_config_set_wrap(&cfg, WRAP_12BIT);
+    pwm_init(slice_num_r, &cfg, true);
+    pwm_init(slice_num_l, &cfg, true);
 
     allocator_ = rcl_get_default_allocator();
 
@@ -60,8 +96,14 @@ Main::Main()
     rclc_publisher_init_default(
         &publisher_,
         &node_,
-        ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Int32),
-        "pico_number_publisher");
+        ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Float32),
+        "/pico/duty");
+
+    rclc_subscription_init_default(
+            &subscriber_,
+            &node_,
+            ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Float32),
+            "/pico/pwm");
 
     rclc_timer_init_default(
         &timer_,
@@ -69,12 +111,20 @@ Main::Main()
         RCL_MS_TO_NS(1000),
         Main::timer_callback_);
 
-    rclc_executor_init(&this->executor_, &support_.context, 1, &allocator_);
+    rclc_executor_init(&this->executor_, &support_.context, 2, &allocator_);
     rclc_executor_add_timer(&this->executor_, &timer_);
+    rclc_executor_add_subscription(
+            &this->executor_,
+            &this->subscriber_,
+            &this->sub_msg_,
+            Main::subscription_callback_,
+            ON_NEW_DATA);
 
     gpio_put(LED_PIN, 1);
 
-    this->msg_.data = 0;
+    duty_ = 0.0f;
+    pub_msg_.data = 50.0f;
+    sub_msg_.data = 50.0f;
 }
 
 void Main::spin()

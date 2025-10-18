@@ -25,6 +25,7 @@ target_link_libraries(pico_pwm
     pico_stdlib
     microros
     hardware_uart
+    hardware_pwm
 )
 
 target_include_directories(pico_pwm PUBLIC
