@@ -16,6 +16,8 @@ micro-ROS Agent をビルドする話を書く
 
 このリポジトリのビルド方法を書く
 
+ROS_LOCALHOST_ONLY と ROS_DOMAIN_ID の設定値の話も書かないとだめかも
+
 # ライセンス
 MIT にしたい
 
