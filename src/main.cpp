@@ -21,16 +21,16 @@ extern "C" {
 #define HAMMER_R_PIN 2
 #define HAMMER_L_PIN 3
 
-Main* Main::instance_ = nullptr;
+Node* Node::instance_ = nullptr;
 
-void Main::timer_callback_(rcl_timer_t *timer_, int64_t last_call_time)
+void Node::timer_callback_(rcl_timer_t *timer_, int64_t last_call_time)
 {
     if (!instance_) return;
     instance_->pub_msg_.data = instance_->duty_;    //! 0.0f ~ 1.0f
     rcl_ret_t ret = rcl_publish(&instance_->publisher_, &instance_->pub_msg_, NULL);
 }
 
-void Main::subscription_callback_(const void * msgin)
+void Node::subscription_callback_(const void * msgin)
 {
     if (!msgin) return;
     const std_msgs__msg__Float32 * msg = static_cast<const std_msgs__msg__Float32 *>(msgin);    //! -100.0f ~ 100.0f
@@ -49,7 +49,17 @@ void Main::subscription_callback_(const void * msgin)
     pwm_set_gpio_level(HAMMER_L_PIN, (uint16_t)((duty / 100.0f) * WRAP_12BIT));
 }
 
-Main::Main()
+void Node::setPWM(uint target_pin)
+{
+    gpio_set_function(target_pin, GPIO_FUNC_PWM);
+    uint slice_num = pwm_gpio_to_slice_num(target_pin);
+    pwm_config cfg = pwm_get_default_config();
+    pwm_config_set_clkdiv(&cfg, 30.5f);
+    pwm_config_set_wrap(&cfg, WRAP_12BIT);
+    pwm_init(slice_num, &cfg, true);
+}
+
+void Node::initNode()
 {
     instance_ = this;
     rmw_uros_set_custom_transport(
@@ -63,16 +73,6 @@ Main::Main()
 
     gpio_init(LED_PIN);
     gpio_set_dir(LED_PIN, GPIO_OUT);
-
-    gpio_set_function(HAMMER_R_PIN, GPIO_FUNC_PWM);
-    gpio_set_function(HAMMER_L_PIN, GPIO_FUNC_PWM);
-    uint slice_num_r = pwm_gpio_to_slice_num(HAMMER_R_PIN);
-    uint slice_num_l = pwm_gpio_to_slice_num(HAMMER_L_PIN);
-    pwm_config cfg = pwm_get_default_config();
-    pwm_config_set_clkdiv(&cfg, 30.5f);
-    pwm_config_set_wrap(&cfg, WRAP_12BIT);
-    pwm_init(slice_num_r, &cfg, true);
-    pwm_init(slice_num_l, &cfg, true);
 
     allocator_ = rcl_get_default_allocator();
 
@@ -93,6 +93,15 @@ Main::Main()
     rclc_support_init(&support_, 0, NULL, &allocator_);
 
     rclc_node_init_default(&node_, "pico_node", "", &support_);
+}
+
+Node::Node()
+{
+    Node::initNode();
+
+    Node::setPWM(HAMMER_R_PIN);
+    Node::setPWM(HAMMER_L_PIN);
+
     rclc_publisher_init_default(
         &publisher_,
         &node_,
@@ -109,7 +118,7 @@ Main::Main()
         &timer_,
         &support_,
         RCL_MS_TO_NS(1000),
-        Main::timer_callback_);
+        Node::timer_callback_);
 
     rclc_executor_init(&this->executor_, &support_.context, 2, &allocator_);
     rclc_executor_add_timer(&this->executor_, &timer_);
@@ -117,7 +126,7 @@ Main::Main()
             &this->executor_,
             &this->subscriber_,
             &this->sub_msg_,
-            Main::subscription_callback_,
+            Node::subscription_callback_,
             ON_NEW_DATA);
 
     gpio_put(LED_PIN, 1);
@@ -127,17 +136,17 @@ Main::Main()
     sub_msg_.data = 50.0f;
 }
 
-void Main::spin()
+void Node::spin()
 {
     rclc_executor_spin_some(&this->executor_, RCL_MS_TO_NS(100));
 }
 
 int main()
 {
-    Main app;
+    Node node;
     while (true)
     {
-        app.spin();
+        node.spin();
     }
     return 0;
 }

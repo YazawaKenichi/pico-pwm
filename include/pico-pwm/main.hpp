@@ -9,16 +9,18 @@
 
 #define LED_PIN 25
 
-class Main
+class Node
 {
     public:
-        Main();
+        Node();
         void spin();
         static void timer_callback_(rcl_timer_t*, int64_t);
         static void subscription_callback_(const void* msgin);
     protected:
     private:
-        static Main* instance_;
+        void initNode();
+        void setPWM(uint);
+        static Node* instance_;
 
         rcl_publisher_t publisher_;
         std_msgs__msg__Float32 pub_msg_;
