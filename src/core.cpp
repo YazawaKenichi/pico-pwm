@@ -13,6 +13,33 @@ extern "C"
 
 #include <std_msgs/msg/float32.h>
 
+void MainNode::spin()
+{
+    rclc_executor_spin_some(&executor_, RCL_MS_TO_NS(100));
+}
+
+bool MainNode::check_agent_alive()
+{
+    const int TIMEOUT_MS = 1000;
+    const uint8_t ATTEMPTS = 120;
+    rcl_ret_t ret = rmw_uros_ping_agent(TIMEOUT_MS, ATTEMPTS);
+    return ret;
+}
+
+void MainNode::publisher_settings()
+{
+    // ↓ こんな感じでかんたんに publisher を建てられたらかんたんでいいな
+    RosPwmDriver pwm_gp2;
+    pwm_gp2.pwm_publisher_init(&node_, &executor_, "/pico/pwm/GP2");
+
+    RosPwmDriver pwm_gp3;
+    pwm_publisher_init(&node_, &executor_, "/pico/pwm/GP3");
+
+    RosPwmDriver pwm_gp4;
+    pwm_gp2.pwm_publisher_init(&node_, &executor_, "/pico/pwm/GP4");
+
+}
+
 MainNode::MainNode()
 {
     rmw_uros_set_custom_transport(
@@ -32,21 +59,6 @@ MainNode::MainNode()
     rclc_support_init(&support_, 0, NULL, &allocator_);
     rclc_node_init_default(&node_, "/pico_node", "", &support);
     rclc_executor_init(&this->executor_, &support_.context, 1, &allocator_);
-    // ↓ こんな感じでかんたんに publisher を建てられたらいいな
-    // pwm_publisher_init(&node_, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Float32), "/pico/pwm/GP2");
+    MainNode::publisher_settings();
 }
-
-bool MainNode::check_agent_alive()
-{
-    const int TIMEOUT_MS = 1000;
-    const uint8_t ATTEMPTS = 120;
-    rcl_ret_t ret = rmw_uros_ping_agent(TIMEOUT_MS, ATTEMPTS);
-    return ret;
-}
-
-void MainNode::spin()
-{
-    rclc_executor_spin_some(&executor_, RCL_MS_TO_NS(100));
-}
-
 
