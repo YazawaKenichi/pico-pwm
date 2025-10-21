@@ -11,7 +11,7 @@ pico_sdk_init()
 link_directories(external/microros_pico/libmicroros)
 
 add_executable(pico_pwm
-    src/main.cpp
+    src/main.c
     external/microros_pico/pico_uart_transport.c
 )
 
