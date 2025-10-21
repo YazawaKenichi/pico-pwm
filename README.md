@@ -65,3 +65,5 @@ MIT にしたい
 git submodule add https://github.com/micro-ROS/micro_ros_raspberrypi_pico_sdk external/microros_pico
 ```
 
+なんかファイル色々あるけど実際必要なのは CMakeLists.txt と main.cpp と main.hpp ( あとは libmicroros の中身 ）
+
