@@ -21,6 +21,7 @@ class Node
         void initNode();
         void setPWM(uint);
         static Node* instance_;
+        static uint16_t duty2us(float);
 
         rcl_publisher_t publisher_;
         std_msgs__msg__Float32 pub_msg_;

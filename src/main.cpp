@@ -18,6 +18,7 @@ extern "C" {
 }
 
 #define WRAP_12BIT 4095
+#define WRAP_16BIT 65535
 #define HAMMER_R_PIN 2
 #define HAMMER_L_PIN 3
 
@@ -30,33 +31,32 @@ void Node::timer_callback_(rcl_timer_t *timer_, int64_t last_call_time)
     rcl_ret_t ret = rcl_publish(&instance_->publisher_, &instance_->pub_msg_, NULL);
 }
 
+uint16_t Node::duty2us(float duty)
+{
+}
+
 void Node::subscription_callback_(const void * msgin)
 {
     if (!msgin) return;
     const std_msgs__msg__Float32 * msg = static_cast<const std_msgs__msg__Float32 *>(msgin);    //! -100.0f ~ 100.0f
     float duty = 50 + (msg->data / 2);  //! 0.0f ~ 100.0f
-    if(duty < 0)
-    {
-        duty = 0.0f;
-    }
-    if(duty > 100)
-    {
-        duty = 100.0f;
-    }
+
     instance_->duty_ = duty / 100.0f;   //! 0.0f ~ 1.0f
 
-    pwm_set_gpio_level(HAMMER_R_PIN, (uint16_t)((duty / 100.0f) * WRAP_12BIT));
-    pwm_set_gpio_level(HAMMER_L_PIN, (uint16_t)((duty / 100.0f) * WRAP_12BIT));
+    uint16_t pulse = Node::duty2us(duty);
+
+    pwm_set_gpio_level(HAMMER_R_PIN, pulse);
+    pwm_set_gpio_level(HAMMER_L_PIN, pulse);
 }
 
 void Node::setPWM(uint target_pin)
 {
     gpio_set_function(target_pin, GPIO_FUNC_PWM);
-    uint slice_num = pwm_gpio_to_slice_num(target_pin);
+    uint slice = pwm_gpio_to_slice_num(target_pin);
     pwm_config cfg = pwm_get_default_config();
-    pwm_config_set_clkdiv(&cfg, 30.5f);
-    pwm_config_set_wrap(&cfg, WRAP_12BIT);
-    pwm_init(slice_num, &cfg, true);
+    pwm_config_set_clkdiv(&cfg, 125.0f);
+    pwm_config_set_wrap(&cfg, 19999);
+    pwm_init(slice, &cfg, true);
 }
 
 void Node::initNode()
