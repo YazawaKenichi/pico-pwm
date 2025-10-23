@@ -62,6 +62,8 @@ libmicroros は [micro-ROS/micro_ros_raspberrypi_pico_sdk](https://github.com/mi
 
 結構うやむやになってます。（ [pico_micro_ros_example.c](https://github.com/micro-ROS/micro_ros_raspberrypi_pico_sdk/blob/humble/pico_micro_ros_example.c) からパクってるコードが一部あるので Apache 2.0 になる？）
 
+いずれは MIT で公開したいつもりなので MIT の LICENSE ファイルをいっちょ前においてあります（だめ）
+
 # メモ書き
 ```
 git submodule add https://github.com/micro-ROS/micro_ros_raspberrypi_pico_sdk external/microros_pico
