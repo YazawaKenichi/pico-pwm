@@ -58,7 +58,9 @@ ROS_LOCALHOST_ONLY と ROS_DOMAIN_ID の設定値の話も書かないとだめ�
 ```
 
 # ライセンス
-MIT にしたい
+libmicroros は [micro-ROS/micro_ros_raspberrypi_pico_sdk](https://github.com/micro-ROS/micro_ros_raspberrypi_pico_sdk/tree/humble) のライセンスに依存します。
+
+結構うやむやになってます。（ [pico_micro_ros_example.c](https://github.com/micro-ROS/micro_ros_raspberrypi_pico_sdk/blob/humble/pico_micro_ros_example.c) からパクってるコードが一部あるので Apache 2.0 になる？）
 
 # メモ書き
 ```
