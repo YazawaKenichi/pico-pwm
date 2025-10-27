@@ -14,6 +14,8 @@
 #include "hardware/clocks.h"
 #include "hardware/pwm.h"
 
+///// ブラシレスモータ //////
+
 #define GUN_L_PIN 2
 #define GUN_R_PIN 3
 
