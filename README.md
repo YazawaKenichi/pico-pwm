@@ -65,8 +65,19 @@ libmicroros は [micro-ROS/micro_ros_raspberrypi_pico_sdk](https://github.com/mi
 いずれは MIT で公開したいつもりなので MIT の LICENSE ファイルをいっちょ前においてあります（だめ）
 
 # メモ書き
+最初に submodule を追加するコマンド
 ```
 git submodule add https://github.com/micro-ROS/micro_ros_raspberrypi_pico_sdk external/microros_pico
+```
+
+submodule 付きで clone
+```
+git clone --recursive https://github.com/yazawakenichi/pico-pwm
+```
+
+submodule 付きで clone し忘れたとき
+```
+git submodule update --init --recursive
 ```
 
 なんかファイル色々あるけど実際必要なのは CMakeLists.txt と main.cpp と main.hpp ( あとは libmicroros の中身 ）
