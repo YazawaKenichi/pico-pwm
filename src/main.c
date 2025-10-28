@@ -1,7 +1,6 @@
-#include <stdio.h>
+#include "main.h"
 
 #include <rcl/rcl.h>
-#include <rcl/error_handling.h>
 #include <rclc/rclc.h>
 #include <rclc/executor.h>
 #include <std_msgs/msg/int32.h>
@@ -15,19 +14,6 @@
 #include "hardware/pwm.h"
 
 ///// ブラシレスモータ //////
-
-#define GUN_L_PIN 2
-#define GUN_R_PIN 3
-
-#define APPARENTLY_MIN -100.0f
-#define APPARENTLY_MAX  100.0f
-#define HIGH_TIME_MIN   1020.0f
-#define HIGH_TIME_MAX   2020.0f
-#define RS2205_PWM_HZ 50.0f
-#define RS2205_PWM_RESOLUTION 65536    //! 9765.625 < RESOLUTION < 2500000
-
-#define RESCALE(X, I_MAX, I_MIN, O_MAX, O_MIN) ((O_MAX - O_MIN) * (float) ((X - I_MIN) / (float) (I_MAX - I_MIN)) + O_MIN)
-#define HZ2US(HERTZ) (1000 * 1000 * 1 / ((float) HERTZ))
 
 //! 砲台左
 uint16_t gun_l_level_;
@@ -153,16 +139,6 @@ void init_gun_pwm()
     gun_l_level_ = set_gun_pwm(GUN_L_PIN, 0);
     gun_r_level_ = set_gun_pwm(GUN_R_PIN, 0);
 }
-
-#define SERVO_PIN 4
-
-/* Futaba S3003 */
-#define SERVO_ANGLE_MIN 0
-#define SERVO_ANGLE_MAX 180
-#define SERVO_PULSE_LENGTH_MIN  500
-#define SERVO_PULSE_LENGTH_MAX 3000
-#define SERVO_RESOLUTION 65536
-#define SERVO_HZ 50
 
 uint16_t servo_level_;
 rcl_publisher_t servo_publisher_;
