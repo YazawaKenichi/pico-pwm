@@ -184,7 +184,6 @@ void servo_timer_callback_()
     rcl_publish(&servo_publisher_, &pub_msg_, NULL);
 }
 
-
 void init_servo_pwm()
 {
     ///// 砲塔 /////
@@ -201,8 +200,84 @@ void init_servo_pwm()
     servo_level_ = set_servo_pwm(SERVO_PIN, 90);
 }
 
+//! ステッピング
+float stepper_freq_;
+rcl_publisher_t stepper_publisher_;     // 未使用 値をパブリッシュするときに使える用
+rcl_subscription_t stepper_subscriber_;
+std_msgs__msg__Float32 stepper_msg_;
+
+void stepper_callback_(const void * msgin)
+{
+    const std_msgs__msg__Float32 * msg = (const std_msgs__msg__Float32 *) msgin;
+    if(msg == NULL)
+    {
+        return;
+    }
+    if(stepper_freq_ - msg->data)
+    {
+        //! 値の更新があったときだけ実行
+        set_step_rate(stepper_freq_);
+        stepper_freq_ = msg->data;
+    }
+}
+
+void set_step_rate(float freq_hz)
+{
+    uint slice_num = pwm_gpio_to_slice_num(STEPPER_PIN);
+    uint32_t wrap = (uint32_t)(clock_get_hz(clk_sys) / freq_hz) - 1;
+    if (wrap > 0xFFFF)
+    {
+        wrap = 0xFFFF;
+    }
+    pwm_set_wrap(slice_num, wrap);
+    pwm_set_chan_level(slice_num, pwm_gpio_to_channel(STEPPER_PIN), wrap / 2);
+}
+
+void init_stepper()
+{
+    ///// ステッピングモータ /////
+    stepper_freq_ = 0;
+    //! PWM 周波数と分解能の設定
+    pwm_config stepper_cfg = pwm_get_default_config();
+    //! 1 分周
+    // float clkdiv = (float) clock_get_hz(clk_sys) / (STEPPER_HZ * STEPPER_RESOLUTION);
+    pwm_config_set_clkdiv(&stepper_cfg, 1.0f);
+    //! PWM ピンの設定
+    gpio_set_function(STEPPER_PIN, GPIO_FUNC_PWM);
+    uint slice_stepper = pwm_gpio_to_slice_num(STEPPER_PIN);
+    pwm_init(slice_stepper, &stepper_cfg, true);
+    pwm_set_enabled(slice_stepper, true);
+}
+
+//! GPIO
+void init_gpio()
+{
+    gpio_init(PICO_DEFAULT_LED_PIN);
+    gpio_set_dir(PICO_DEFAULT_LED_PIN, GPIO_OUT);
+    gpio_put(PICO_DEFAULT_LED_PIN, 1);
+}
+
+//! 時間管理系統
+struct repeating_timer time_timer_;
+uint64_t time_;
+
+bool time_update_callback(struct repeating_timer *t)
+{
+    time_++;
+    return true;
+}
+
+void init_time()
+{
+    time_ = 0;
+    add_repeating_timer_us(-1, time_update_callback, NULL, &time_timer_);
+}
+
 int main()
 {
+    init_gpio();
+    // init_time();
+    init_stepper();
     ////////// micro ROS の処理 //////////
     init_ros();
     init_gun_pwm();
@@ -216,7 +291,7 @@ int main()
     ///// ノードの作成 /////
     rclc_support_init(&support_, 0, NULL, &allocator_);
     rclc_node_init_default(&node_, "pico_node", "", &support_);
-    rclc_executor_init(&executor_, &support_.context, 6, &allocator_);
+    rclc_executor_init(&executor_, &support_.context, 8, &allocator_);
 
     ///// パブリッシャの作成 /////
     //! 砲台左のパブリッシャ
@@ -234,6 +309,13 @@ int main()
     rclc_publisher_init_default(&servo_publisher_, &node_, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Int32), "/pico/servo/level");
     rclc_timer_init_default(&servo_timer_, &support_, RCL_MS_TO_NS(1000), servo_timer_callback_);
     rclc_executor_add_timer(&executor_, &servo_timer_);
+    //! ステッピングモータのパブリッシャ
+    /*
+    rcl_timer_t stepper_timer_;
+    rclc_publisher_init_default(&stepper_publisher_, &node_, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Float32), "/pico/stepper/hz");
+    rclc_timer_init_default(&stepper_timer_, &support_, RCL_MS_TO_NS(1000), stepper_timer_callback_);
+    rclc_executor_add_timer(&executor_, &stepper_timer_);
+    */
 
     ///// サブスクライバの作成 /////
     //! 砲台左のサブスクライバ
@@ -245,6 +327,9 @@ int main()
     //! 砲塔サーボのサブスクライバ
     rclc_subscription_init_default(&servo_subscriber_, &node_, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Float32), "/pico/servo/deg");
     rclc_executor_add_subscription(&executor_, &servo_subscriber_, &servo_msg_, servo_callback_, ON_NEW_DATA);
+    //! ステッピングモータのサブスクライバ
+    rclc_subscription_init_default(&stepper_subscriber_, &node_, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Float32), "/pico/stepper/hz");
+    rclc_executor_add_subscription(&executor_, &stepper_subscriber_, &stepper_msg_, stepper_callback_, ON_NEW_DATA);
 
     while(true)
     {

@@ -28,6 +28,9 @@
 #define SERVO_RESOLUTION 65536
 #define SERVO_HZ 50
 
+///// ステッピング /////
+#define STEPPER_PIN 6
+
 bool check_agent_alive();
 void init_ros();
 float rs2205_adaptor(float);
@@ -43,6 +46,12 @@ uint16_t set_servo_pwm(uint32_t, float);
 void servo_callback_(const void *);
 void servo_timer_callback_();
 void init_servo_pwm();
+void stepper_callback_(const void *);
+void set_step_rate(float);
+void init_stepper();
+void init_gpio();
+bool time_update_callback(struct repeating_timer *);
+void init_time();
 
 #endif
 
