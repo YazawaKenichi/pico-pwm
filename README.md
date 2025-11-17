@@ -21,6 +21,10 @@ micro-ROS Agent をビルドする話を書く
 ROS_LOCALHOST_ONLY と ROS_DOMAIN_ID の設定値の話も書かないとだめかも
 
 # Usage
+0. 配線
+
+** 配線図とか載せたい **
+
 1. micro-ROS Agent の立ち上げ
     ```
     ros2 run micro_ros_agent micro_ros_agent serial -b 115200 --dev /dev/ttyACM0 -v6

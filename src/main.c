@@ -1,5 +1,6 @@
 #include "main.h"
 
+#include <math.h>
 #include <rcl/rcl.h>
 #include <rclc/rclc.h>
 #include <rclc/executor.h>
@@ -26,6 +27,21 @@ uint16_t gun_r_level_;
 rcl_publisher_t gun_r_publisher_;
 rcl_subscription_t gun_r_subscriber_;
 std_msgs__msg__Float32 gun_r_msg_;
+
+///// Arduino の UART /////
+#define UART_ID uart0
+#define BAUD_RATE 115200
+#define UART_TX_PIN 0
+#define UART_RX_PIN 1
+
+#define STEPPER_UART 1
+
+//! STEPPER_DRIVE と STEPPER_UART のどっちかが定義されていることを前提にする
+#if !defined(STEPPER_DRIVE) && !defined(STEPPER_UART)
+#error "Either STEPPER_DRIVE or STEPPER_UART must be FALSE!"
+#elif defined(STEPPER_DRIVE) && defined(STEPPER_UART)
+#warning "Both STEPPER_DRIVE and STEPPER_UART are TRUE! Using STEPPER_UART by default."
+#endif
 
 // Agent の生存確認
 bool check_agent_alive()
@@ -201,10 +217,30 @@ void init_servo_pwm()
 }
 
 //! ステッピング
-float stepper_freq_;
+float stepper_position_;
+float stepper_bef_;
 rcl_publisher_t stepper_publisher_;     // 未使用 値をパブリッシュするときに使える用
 rcl_subscription_t stepper_subscriber_;
 std_msgs__msg__Float32 stepper_msg_;
+
+void uart_write_float(double value)
+{
+#if 0
+    //! float の型をそのまま TX しようとしたパターン
+    //! 問題点 : Arduino 側の受け取りプログラムを書くのが面倒くさくなる
+    union { float f; uint8_t b[4]; } conv;
+    conv.f = value;
+    uart_write_blocking(UART_ID, conv.b, 4);
+#endif
+    char buf[32];
+    int len = snprintf(buf, sizeof(buf), "%f\r\n", (double) value);
+    uart_write_blocking(UART_ID, (uint8_t *)buf, len);
+}
+
+void uart_write_string(char * message_)
+{
+    uart_write_blocking(UART_ID, (const uint8_t *) message_, strlen(message_));
+}
 
 void stepper_callback_(const void * msgin)
 {
@@ -213,12 +249,26 @@ void stepper_callback_(const void * msgin)
     {
         return;
     }
-    if(stepper_freq_ - msg->data)
+    if(fabsf(stepper_bef_ - msg->data) > 1e-3f)
     {
+#if STEPPER_DRIVE
         //! 値の更新があったときだけ実行
-        set_step_rate(stepper_freq_);
-        stepper_freq_ = msg->data;
+        set_step_rate(msg->data);
+#endif
+#if STEPPER_UART
+        // const char *uart_message_ = "Hello, World!\r\n";
+        // uart_write_string(uart_message_);
+        uart_write_float(msg->data);
+#endif
+        stepper_bef_ = msg->data;
     }
+}
+
+void stepper_timer_callback_()
+{
+    std_msgs__msg__Int32 pub_msg_;
+    pub_msg_.data = stepper_bef_;
+    rcl_publish(&stepper_publisher_, &pub_msg_, NULL);
 }
 
 void set_step_rate(float freq_hz)
@@ -233,8 +283,17 @@ void set_step_rate(float freq_hz)
     pwm_set_chan_level(slice_num, pwm_gpio_to_channel(STEPPER_PIN), wrap / 2);
 }
 
+void init_uart()
+{
+    stdio_init_all();
+    uart_init(UART_ID, BAUD_RATE);
+    gpio_set_function(UART_TX_PIN, GPIO_FUNC_UART);
+    gpio_set_function(UART_RX_PIN, GPIO_FUNC_UART);
+}
+
 void init_stepper()
 {
+#if STEPPER_DRIVE
     ///// ステッピングモータ /////
     stepper_freq_ = 0;
     //! PWM 周波数と分解能の設定
@@ -247,6 +306,10 @@ void init_stepper()
     uint slice_stepper = pwm_gpio_to_slice_num(STEPPER_PIN);
     pwm_init(slice_stepper, &stepper_cfg, true);
     pwm_set_enabled(slice_stepper, true);
+#endif
+#if STEPPER_UART
+    init_uart();
+#endif
 }
 
 //! GPIO
@@ -310,12 +373,10 @@ int main()
     rclc_timer_init_default(&servo_timer_, &support_, RCL_MS_TO_NS(1000), servo_timer_callback_);
     rclc_executor_add_timer(&executor_, &servo_timer_);
     //! ステッピングモータのパブリッシャ
-    /*
     rcl_timer_t stepper_timer_;
-    rclc_publisher_init_default(&stepper_publisher_, &node_, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Float32), "/pico/stepper/hz");
+    rclc_publisher_init_default(&stepper_publisher_, &node_, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Float32), "/pico/stepper/position/debug");
     rclc_timer_init_default(&stepper_timer_, &support_, RCL_MS_TO_NS(1000), stepper_timer_callback_);
     rclc_executor_add_timer(&executor_, &stepper_timer_);
-    */
 
     ///// サブスクライバの作成 /////
     //! 砲台左のサブスクライバ
@@ -328,12 +389,12 @@ int main()
     rclc_subscription_init_default(&servo_subscriber_, &node_, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Float32), "/pico/servo/deg");
     rclc_executor_add_subscription(&executor_, &servo_subscriber_, &servo_msg_, servo_callback_, ON_NEW_DATA);
     //! ステッピングモータのサブスクライバ
-    rclc_subscription_init_default(&stepper_subscriber_, &node_, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Float32), "/pico/stepper/hz");
+    rclc_subscription_init_default(&stepper_subscriber_, &node_, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Float32), "/pico/stepper/position/raw");
     rclc_executor_add_subscription(&executor_, &stepper_subscriber_, &stepper_msg_, stepper_callback_, ON_NEW_DATA);
 
     while(true)
     {
-        rclc_executor_spin_some(&executor_, RCL_MS_TO_NS(100));
+        rclc_executor_spin_some(&executor_, RCL_MS_TO_NS(1));
     }
 
     return 0;
