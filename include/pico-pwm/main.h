@@ -2,6 +2,7 @@
 #define __MAIN_H__
 
 #include "pico/stdlib.h"
+#include <rcl/rcl.h>
 
 ///// 砲身ブラシレス /////
 #define GUN_L_PIN 2
@@ -18,7 +19,10 @@
 #define HZ2US(HERTZ) (1000 * 1000 * 1 / ((float) HERTZ))
 
 ///// 砲塔サーボ /////
-#define SERVO_PIN 4
+#define ROLL_PIN 4
+#define PITCH_PIN 5
+#define YAW_PIN 6
+#define LOADING_PIN 7
 
 /* Futaba S3003 */
 #define SERVO_ANGLE_MIN 0
@@ -29,7 +33,7 @@
 #define SERVO_HZ 50
 
 ///// ステッピング /////
-#define STEPPER_PIN 6
+#define STEPPER_PIN 8
 
 bool check_agent_alive();
 void init_ros();
@@ -38,16 +42,26 @@ uint16_t gun_duty2level(float);
 uint16_t set_gun_pwm(uint16_t, float);
 void gun_l_callback_(const void *);
 void gun_r_callback_(const void *);
-void gun_l_timer_callback_();
-void gun_r_timer_callback_();
+void gun_l_timer_callback_(rcl_timer_t *, int64_t);
+void gun_r_timer_callback_(rcl_timer_t *, int64_t);
 void init_gun_pwm();
 uint16_t servo_deg2level(float);
 uint16_t set_servo_pwm(uint32_t, float);
-void servo_callback_(const void *);
-void servo_timer_callback_();
+void roll_callback_(const void *);
+void roll_timer_callback_(rcl_timer_t *, int64_t);
+void pitch_callback_(const void *);
+void pitch_timer_callback_(rcl_timer_t *, int64_t);
+void yaw_callback_(const void *);
+void yaw_timer_callback_(rcl_timer_t *, int64_t);
+void loading_callback_(const void *);
+void loading_timer_callback_(rcl_timer_t *, int64_t);
 void init_servo_pwm();
+void uart_write_float(float);
+void uart_write_string(char *);
 void stepper_callback_(const void *);
+void stepper_timer_callback_(rcl_timer_t *, int64_t);
 void set_step_rate(float);
+void init_uart();
 void init_stepper();
 void init_gpio();
 bool time_update_callback(struct repeating_timer *);

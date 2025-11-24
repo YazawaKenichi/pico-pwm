@@ -36,27 +36,20 @@ std_msgs__msg__Float32 gun_r_msg_;
 
 #define STEPPER_UART 1
 
-//! STEPPER_DRIVE と STEPPER_UART のどっちかが定義されていることを前提にする
-#if !defined(STEPPER_DRIVE) && !defined(STEPPER_UART)
-#error "Either STEPPER_DRIVE or STEPPER_UART must be FALSE!"
-#elif defined(STEPPER_DRIVE) && defined(STEPPER_UART)
-#warning "Both STEPPER_DRIVE and STEPPER_UART are TRUE! Using STEPPER_UART by default."
-#endif
-
 // Agent の生存確認
 bool check_agent_alive()
 {
     const int TIMEOUT_MS = 1000;
     const uint8_t ATTEMPTS = 120;
     rcl_ret_t ret = rmw_uros_ping_agent(TIMEOUT_MS, ATTEMPTS);
-    return ret;
+    return (ret == RCL_RET_OK);
 }
 
 ///// 初期化関数 /////
 void init_ros()
 {
     rmw_uros_set_custom_transport(true, NULL, pico_serial_transport_open, pico_serial_transport_close, pico_serial_transport_write, pico_serial_transport_read);
-    while(RCL_RET_OK != check_agent_alive())
+    while(!check_agent_alive())
     {
         //! Agent から応答が返ってくるまで待機
         sleep_ms(100);
@@ -122,15 +115,19 @@ void gun_r_callback_(const void * msgin)
     gun_r_level_ = set_gun_pwm(GUN_R_PIN, -1 * msg->data);
 }
 
-void gun_l_timer_callback_()
+void gun_l_timer_callback_(rcl_timer_t * timer, int64_t last_call_time)
 {
+    (void) timer;
+    (void) last_call_time;
     std_msgs__msg__Int32 pub_msg_;
     pub_msg_.data = gun_l_level_;
     rcl_publish(&gun_l_publisher_, &pub_msg_, NULL);
 }
 
-void gun_r_timer_callback_()
+void gun_r_timer_callback_(rcl_timer_t * timer, int64_t last_call_time)
 {
+    (void) timer;
+    (void) last_call_time;
     std_msgs__msg__Int32 pub_msg_;
     pub_msg_.data = gun_r_level_;
     rcl_publish(&gun_r_publisher_, &pub_msg_, NULL);
@@ -156,10 +153,25 @@ void init_gun_pwm()
     gun_r_level_ = set_gun_pwm(GUN_R_PIN, 0);
 }
 
-uint16_t servo_level_;
-rcl_publisher_t servo_publisher_;
-rcl_subscription_t servo_subscriber_;
-std_msgs__msg__Int32 servo_msg_;
+uint16_t roll_level_;
+rcl_publisher_t roll_publisher_;
+rcl_subscription_t roll_subscriber_;
+std_msgs__msg__Int32 roll_msg_;
+
+uint16_t pitch_level_;
+rcl_publisher_t pitch_publisher_;
+rcl_subscription_t pitch_subscriber_;
+std_msgs__msg__Int32 pitch_msg_;
+
+uint16_t yaw_level_;
+rcl_publisher_t yaw_publisher_;
+rcl_subscription_t yaw_subscriber_;
+std_msgs__msg__Int32 yaw_msg_;
+
+uint16_t loading_level_;
+rcl_publisher_t loading_publisher_;
+rcl_subscription_t loading_subscriber_;
+std_msgs__msg__Int32 loading_msg_;
 
 uint16_t servo_deg2level(float degree)
 {
@@ -183,21 +195,80 @@ uint16_t set_servo_pwm(uint32_t pin, float degree)
     return level;
 }
 
-void servo_callback_(const void * msgin)
+void roll_callback_(const void * msgin)
 {
     const std_msgs__msg__Float32 * msg = (const std_msgs__msg__Float32 *) msgin;
     if(msg == NULL)
     {
         return;
     }
-    servo_level_ = set_servo_pwm(SERVO_PIN, msg->data);
+    roll_level_ = set_servo_pwm(ROLL_PIN, msg->data);
 }
 
-void servo_timer_callback_()
+void roll_timer_callback_(rcl_timer_t * timer, int64_t last_call_time)
 {
+    (void) timer;
+    (void) last_call_time;
     std_msgs__msg__Int32 pub_msg_;
-    pub_msg_.data = servo_level_;
-    rcl_publish(&servo_publisher_, &pub_msg_, NULL);
+    pub_msg_.data = roll_level_;
+    rcl_publish(&roll_publisher_, &pub_msg_, NULL);
+}
+
+void pitch_callback_(const void * msgin)
+{
+    const std_msgs__msg__Float32 * msg = (const std_msgs__msg__Float32 *) msgin;
+    if(msg == NULL)
+    {
+        return;
+    }
+    pitch_level_ = set_servo_pwm(PITCH_PIN, msg->data);
+}
+
+void pitch_timer_callback_(rcl_timer_t * timer, int64_t last_call_time)
+{
+    (void) timer;
+    (void) last_call_time;
+    std_msgs__msg__Int32 pub_msg_;
+    pub_msg_.data = pitch_level_;
+    rcl_publish(&pitch_publisher_, &pub_msg_, NULL);
+}
+
+void yaw_callback_(const void * msgin)
+{
+    const std_msgs__msg__Float32 * msg = (const std_msgs__msg__Float32 *) msgin;
+    if(msg == NULL)
+    {
+        return;
+    }
+    yaw_level_ = set_servo_pwm(YAW_PIN, msg->data);
+}
+
+void yaw_timer_callback_(rcl_timer_t * timer, int64_t last_call_time)
+{
+    (void) timer;
+    (void) last_call_time;
+    std_msgs__msg__Int32 pub_msg_;
+    pub_msg_.data = yaw_level_;
+    rcl_publish(&yaw_publisher_, &pub_msg_, NULL);
+}
+
+void loading_callback_(const void * msgin)
+{
+    const std_msgs__msg__Float32 * msg = (const std_msgs__msg__Float32 *) msgin;
+    if(msg == NULL)
+    {
+        return;
+    }
+    loading_level_ = set_servo_pwm(LOADING_PIN, msg->data);
+}
+
+void loading_timer_callback_(rcl_timer_t * timer, int64_t last_call_time)
+{
+    (void) timer;
+    (void) last_call_time;
+    std_msgs__msg__Int32 pub_msg_;
+    pub_msg_.data = loading_level_;
+    rcl_publish(&loading_publisher_, &pub_msg_, NULL);
 }
 
 void init_servo_pwm()
@@ -209,21 +280,37 @@ void init_servo_pwm()
     float clkdiv = (float) clock_get_hz(clk_sys) / (SERVO_HZ * SERVO_RESOLUTION);
     pwm_config_set_wrap(&servo_cfg, wrap);
     pwm_config_set_clkdiv(&servo_cfg, clkdiv);
+
     //! PWM ピンの設定
-    gpio_set_function(SERVO_PIN, GPIO_FUNC_PWM);
-    uint slice_servo = pwm_gpio_to_slice_num(SERVO_PIN);
-    pwm_init(slice_servo, &servo_cfg, true);
-    servo_level_ = set_servo_pwm(SERVO_PIN, 90);
+    gpio_set_function(ROLL_PIN, GPIO_FUNC_PWM);
+    uint slice_roll = pwm_gpio_to_slice_num(ROLL_PIN);
+    pwm_init(slice_roll, &servo_cfg, true);
+    roll_level_ = set_servo_pwm(ROLL_PIN, 90);
+
+    gpio_set_function(PITCH_PIN, GPIO_FUNC_PWM);
+    uint slice_pitch = pwm_gpio_to_slice_num(PITCH_PIN);
+    pwm_init(slice_pitch, &servo_cfg, true);
+    pitch_level_ = set_servo_pwm(PITCH_PIN, 90);
+
+    gpio_set_function(YAW_PIN, GPIO_FUNC_PWM);
+    uint slice_yaw = pwm_gpio_to_slice_num(YAW_PIN);
+    pwm_init(slice_yaw, &servo_cfg, true);
+    yaw_level_ = set_servo_pwm(YAW_PIN, 90);
+
+    gpio_set_function(LOADING_PIN, GPIO_FUNC_PWM);
+    uint slice_loading = pwm_gpio_to_slice_num(LOADING_PIN);
+    pwm_init(slice_loading, &servo_cfg, true);
+    loading_level_ = set_servo_pwm(LOADING_PIN, 90);
 }
 
 //! ステッピング
-float stepper_position_;
+//! float stepper_position_;
 float stepper_bef_;
 rcl_publisher_t stepper_publisher_;     // 未使用 値をパブリッシュするときに使える用
 rcl_subscription_t stepper_subscriber_;
 std_msgs__msg__Float32 stepper_msg_;
 
-void uart_write_float(double value)
+void uart_write_float(float value)
 {
 #if 0
     //! float の型をそのまま TX しようとしたパターン
@@ -233,7 +320,7 @@ void uart_write_float(double value)
     uart_write_blocking(UART_ID, conv.b, 4);
 #endif
     char buf[32];
-    int len = snprintf(buf, sizeof(buf), "%f\r\n", (double) value);
+    int len = snprintf(buf, sizeof(buf), "%f\r\n", (float) value);
     uart_write_blocking(UART_ID, (uint8_t *)buf, len);
 }
 
@@ -264,9 +351,11 @@ void stepper_callback_(const void * msgin)
     }
 }
 
-void stepper_timer_callback_()
+void stepper_timer_callback_(rcl_timer_t * timer, int64_t last_call_time)
 {
-    std_msgs__msg__Int32 pub_msg_;
+    (void) timer;
+    (void) last_call_time;
+    std_msgs__msg__Float32 pub_msg_;
     pub_msg_.data = stepper_bef_;
     rcl_publish(&stepper_publisher_, &pub_msg_, NULL);
 }
@@ -274,13 +363,22 @@ void stepper_timer_callback_()
 void set_step_rate(float freq_hz)
 {
     uint slice_num = pwm_gpio_to_slice_num(STEPPER_PIN);
-    uint32_t wrap = (uint32_t)(clock_get_hz(clk_sys) / freq_hz) - 1;
-    if (wrap > 0xFFFF)
+    if(freq_hz <= 0.0f)
     {
-        wrap = 0xFFFF;
+        pwm_set_wrap(slice_num, 0xFFFF);
+        pwm_set_chan_level(slice_num, pwm_gpio_to_channel(STEPPER_PIN), 0);
+        return ;
     }
-    pwm_set_wrap(slice_num, wrap);
-    pwm_set_chan_level(slice_num, pwm_gpio_to_channel(STEPPER_PIN), wrap / 2);
+    else
+    {
+        uint32_t wrap = (uint32_t)(clock_get_hz(clk_sys) / freq_hz) - 1;
+        if (wrap > 0xFFFF)
+        {
+            wrap = 0xFFFF;
+        }
+        pwm_set_wrap(slice_num, wrap);
+        pwm_set_chan_level(slice_num, pwm_gpio_to_channel(STEPPER_PIN), wrap / 2);
+    }
 }
 
 void init_uart()
@@ -295,7 +393,6 @@ void init_stepper()
 {
 #if STEPPER_DRIVE
     ///// ステッピングモータ /////
-    stepper_freq_ = 0;
     //! PWM 周波数と分解能の設定
     pwm_config stepper_cfg = pwm_get_default_config();
     //! 1 分周
@@ -354,7 +451,7 @@ int main()
     ///// ノードの作成 /////
     rclc_support_init(&support_, 0, NULL, &allocator_);
     rclc_node_init_default(&node_, "pico_node", "", &support_);
-    rclc_executor_init(&executor_, &support_.context, 8, &allocator_);
+    rclc_executor_init(&executor_, &support_.context, 16, &allocator_);
 
     ///// パブリッシャの作成 /////
     //! 砲台左のパブリッシャ
@@ -367,11 +464,29 @@ int main()
     rclc_publisher_init_default(&gun_r_publisher_, &node_, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Int32), "/pico/gun/right/pwm/level");
     rclc_timer_init_default(&gun_r_timer_, &support_, RCL_MS_TO_NS(1000), gun_r_timer_callback_);
     rclc_executor_add_timer(&executor_, &gun_r_timer_);
+
     //! 砲塔サーボのパブリッシャ
-    rcl_timer_t servo_timer_;
-    rclc_publisher_init_default(&servo_publisher_, &node_, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Int32), "/pico/servo/level");
-    rclc_timer_init_default(&servo_timer_, &support_, RCL_MS_TO_NS(1000), servo_timer_callback_);
-    rclc_executor_add_timer(&executor_, &servo_timer_);
+    rcl_timer_t roll_timer_;
+    rcl_timer_t pitch_timer_;
+    rcl_timer_t yaw_timer_;
+    rcl_timer_t loading_timer_;
+
+    rclc_publisher_init_default(&roll_publisher_, &node_, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Int32), "/pico/roll/level");
+    rclc_timer_init_default(&roll_timer_, &support_, RCL_MS_TO_NS(1000), roll_timer_callback_);
+    rclc_executor_add_timer(&executor_, &roll_timer_);
+
+    rclc_publisher_init_default(&pitch_publisher_, &node_, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Int32), "/pico/pitch/level");
+    rclc_timer_init_default(&pitch_timer_, &support_, RCL_MS_TO_NS(1000), pitch_timer_callback_);
+    rclc_executor_add_timer(&executor_, &pitch_timer_);
+
+    rclc_publisher_init_default(&yaw_publisher_, &node_, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Int32), "/pico/yaw/level");
+    rclc_timer_init_default(&yaw_timer_, &support_, RCL_MS_TO_NS(1000), yaw_timer_callback_);
+    rclc_executor_add_timer(&executor_, &yaw_timer_);
+
+    rclc_publisher_init_default(&loading_publisher_, &node_, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Int32), "/pico/loading/level");
+    rclc_timer_init_default(&loading_timer_, &support_, RCL_MS_TO_NS(1000), loading_timer_callback_);
+    rclc_executor_add_timer(&executor_, &loading_timer_);
+
     //! ステッピングモータのパブリッシャ
     rcl_timer_t stepper_timer_;
     rclc_publisher_init_default(&stepper_publisher_, &node_, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Float32), "/pico/stepper/position/debug");
@@ -386,8 +501,14 @@ int main()
     rclc_subscription_init_default(&gun_r_subscriber_, &node_, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Float32), "/pico/gun/right/pwm/duty");
     rclc_executor_add_subscription(&executor_, &gun_r_subscriber_, &gun_r_msg_, gun_r_callback_, ON_NEW_DATA);
     //! 砲塔サーボのサブスクライバ
-    rclc_subscription_init_default(&servo_subscriber_, &node_, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Float32), "/pico/servo/deg");
-    rclc_executor_add_subscription(&executor_, &servo_subscriber_, &servo_msg_, servo_callback_, ON_NEW_DATA);
+    rclc_subscription_init_default(&roll_subscriber_, &node_, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Float32), "/pico/roll/deg");
+    rclc_executor_add_subscription(&executor_, &roll_subscriber_, &roll_msg_, roll_callback_, ON_NEW_DATA);
+    rclc_subscription_init_default(&pitch_subscriber_, &node_, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Float32), "/pico/pitch/deg");
+    rclc_executor_add_subscription(&executor_, &pitch_subscriber_, &pitch_msg_, pitch_callback_, ON_NEW_DATA);
+    rclc_subscription_init_default(&yaw_subscriber_, &node_, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Float32), "/pico/yaw/deg");
+    rclc_executor_add_subscription(&executor_, &yaw_subscriber_, &yaw_msg_, yaw_callback_, ON_NEW_DATA);
+    rclc_subscription_init_default(&loading_subscriber_, &node_, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Float32), "/pico/loading/deg");
+    rclc_executor_add_subscription(&executor_, &loading_subscriber_, &loading_msg_, loading_callback_, ON_NEW_DATA);
     //! ステッピングモータのサブスクライバ
     rclc_subscription_init_default(&stepper_subscriber_, &node_, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Float32), "/pico/stepper/position/raw");
     rclc_executor_add_subscription(&executor_, &stepper_subscriber_, &stepper_msg_, stepper_callback_, ON_NEW_DATA);
