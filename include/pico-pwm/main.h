@@ -4,6 +4,15 @@
 #include "pico/stdlib.h"
 #include <rcl/rcl.h>
 
+///// micro-ROS /////
+#define RMW_UROS_MAX_NODES            1
+#define RMW_UROS_MAX_PUBLISHERS       8
+#define RMW_UROS_MAX_SUBSCRIPTIONS    8
+#define RMW_UROS_MAX_SERVICES         0
+#define RMW_UROS_MAX_CLIENTS          0
+#define RMW_UROS_MAX_TIMERS           8
+#define RMW_UROS_MAX_WAIT_SET_ENTRIES 24
+
 ///// 砲身ブラシレス /////
 #define GUN_L_PIN 2
 #define GUN_R_PIN 3
@@ -19,6 +28,7 @@
 #define HZ2US(HERTZ) (1000 * 1000 * 1 / ((float) HERTZ))
 
 ///// 砲塔サーボ /////
+#define INTEGRATE 1
 #define ROLL_PIN 4
 #define PITCH_PIN 5
 #define YAW_PIN 6

@@ -49,9 +49,12 @@ ROS_LOCALHOST_ONLY と ROS_DOMAIN_ID の設定値の話も書かないとだめ�
 ```
 /pico_node
   Subscribers:
-    /pico/pwm: std_msgs/msg/Float32
+    /pico/gun/left/pwm/duty: std_msgs/msg/Float32
+    /pico/gun/right/pwm/duty: std_msgs/msg/Float32
+    /pico/pose: geometry_msgs/msg/Vector3
+    /pico/stepper/position/raw: std_msgs/msg/Float32
   Publishers:
-    /pico/duty: std_msgs/msg/Float32
+
   Service Servers:
 
   Service Clients:
@@ -60,6 +63,19 @@ ROS_LOCALHOST_ONLY と ROS_DOMAIN_ID の設定値の話も書かないとだめ�
 
   Action Clients:
 ```
+
+## /pico/gun/left/pwm/duty, /pico/gun/right/pwm/duty
+砲身のブラシレスモータを制御するトピック
+
+`duty` なので単位は `%` 範囲は `-100 ~ 100`
+
+## /pico/pose
+砲身の向きを決定するトピック
+
+単位は `degree` 範囲は `0 ~ 180`
+
+## /pico/stepper/position/raw
+砲台の位置を決定するトピック
 
 # ライセンス
 libmicroros は [micro-ROS/micro_ros_raspberrypi_pico_sdk](https://github.com/micro-ROS/micro_ros_raspberrypi_pico_sdk/tree/humble) のライセンスに依存します。

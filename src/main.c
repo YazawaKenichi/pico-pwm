@@ -8,6 +8,7 @@
 #include <rmw_microros/rmw_microros.h>
 #include <std_msgs/msg/int32.h>
 #include <std_msgs/msg/float32.h>
+#include <geometry_msgs/msg/vector3.h>
 
 #include "pico/stdlib.h"
 #include "pico_uart_transports.h"
@@ -153,6 +154,10 @@ void init_gun_pwm()
     gun_r_level_ = set_gun_pwm(GUN_R_PIN, 0);
 }
 
+rcl_publisher_t pose_publisher_;
+rcl_subscription_t pose_subscriber_;
+geometry_msgs__msg__Vector3 pose_msg_;
+
 uint16_t roll_level_;
 rcl_publisher_t roll_publisher_;
 rcl_subscription_t roll_subscriber_;
@@ -195,6 +200,18 @@ uint16_t set_servo_pwm(uint32_t pin, float degree)
     return level;
 }
 
+void pose_callback_(const void * msgin)
+{
+    const geometry_msgs__msg__Vector3 * msg = (const geometry_msgs__msg__Vector3 *) msgin;
+    if(msg == NULL)
+    {
+        return;
+    }
+    roll_level_ = set_servo_pwm(ROLL_PIN, msg->x);
+    pitch_level_ = set_servo_pwm(PITCH_PIN, msg->y);
+    yaw_level_ = set_servo_pwm(YAW_PIN, msg->z);
+}
+
 void roll_callback_(const void * msgin)
 {
     const std_msgs__msg__Float32 * msg = (const std_msgs__msg__Float32 *) msgin;
@@ -203,6 +220,17 @@ void roll_callback_(const void * msgin)
         return;
     }
     roll_level_ = set_servo_pwm(ROLL_PIN, msg->data);
+}
+
+void pose_timer_callback_(rcl_timer_t * timer, int64_t last_call_time)
+{
+    (void) timer;
+    (void) last_call_time;
+    geometry_msgs__msg__Vector3 pub_msg_;
+    pub_msg_.x = roll_level_;
+    pub_msg_.y = pitch_level_;
+    pub_msg_.z = yaw_level_;
+    rcl_publish(&pose_publisher_, &pub_msg_, NULL);
 }
 
 void roll_timer_callback_(rcl_timer_t * timer, int64_t last_call_time)
@@ -303,6 +331,17 @@ void init_servo_pwm()
     loading_level_ = set_servo_pwm(LOADING_PIN, 90);
 }
 
+bool led_state_;
+void put_led(bool b)
+{
+    gpio_put(PICO_DEFAULT_LED_PIN, b);
+    led_state_ = b;
+}
+bool get_led()
+{
+    return led_state_;
+}
+
 //! ステッピング
 //! float stepper_position_;
 float stepper_bef_;
@@ -332,6 +371,7 @@ void uart_write_string(char * message_)
 void stepper_callback_(const void * msgin)
 {
     const std_msgs__msg__Float32 * msg = (const std_msgs__msg__Float32 *) msgin;
+    put_led(!get_led());
     if(msg == NULL)
     {
         return;
@@ -453,6 +493,45 @@ int main()
     rclc_node_init_default(&node_, "pico_node", "", &support_);
     rclc_executor_init(&executor_, &support_.context, 16, &allocator_);
 
+    //! ステッピングモータのサブスクライバ
+    rcl_ret_t rc;
+    rc = rclc_subscription_init_default(&stepper_subscriber_, &node_, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Float32), "/pico/stepper/position/raw");
+    rclc_subscription_init_default(&loading_subscriber_, &node_, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Float32), "/pico/loading/deg");
+    rclc_executor_add_subscription(&executor_, &loading_subscriber_, &loading_msg_, loading_callback_, ON_NEW_DATA);
+
+    ///// サブスクライバの作成 /////
+    //! 砲台左のサブスクライバ
+    rclc_subscription_init_default(&gun_l_subscriber_, &node_, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Float32), "/pico/gun/left/pwm/duty");
+    rclc_executor_add_subscription(&executor_, &gun_l_subscriber_, &gun_l_msg_, gun_l_callback_, ON_NEW_DATA);
+    //! 砲台右のサブスクライバ
+    rclc_subscription_init_default(&gun_r_subscriber_, &node_, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Float32), "/pico/gun/right/pwm/duty");
+    rclc_executor_add_subscription(&executor_, &gun_r_subscriber_, &gun_r_msg_, gun_r_callback_, ON_NEW_DATA);
+    //! 砲塔サーボのサブスクライバ
+#if INTEGRATE
+    rclc_subscription_init_default(&pose_subscriber_, &node_, ROSIDL_GET_MSG_TYPE_SUPPORT(geometry_msgs, msg, Vector3), "/pico/pose");
+    rclc_executor_add_subscription(&executor_, &pose_subscriber_, &pose_msg_, pose_callback_, ON_NEW_DATA);
+#else
+    rclc_subscription_init_default(&roll_subscriber_, &node_, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Float32), "/pico/roll/deg");
+    rclc_executor_add_subscription(&executor_, &roll_subscriber_, &roll_msg_, roll_callback_, ON_NEW_DATA);
+    rclc_subscription_init_default(&pitch_subscriber_, &node_, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Float32), "/pico/pitch/deg");
+    rclc_executor_add_subscription(&executor_, &pitch_subscriber_, &pitch_msg_, pitch_callback_, ON_NEW_DATA);
+    rclc_subscription_init_default(&yaw_subscriber_, &node_, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Float32), "/pico/yaw/deg");
+    rclc_executor_add_subscription(&executor_, &yaw_subscriber_, &yaw_msg_, yaw_callback_, ON_NEW_DATA);
+#endif
+    if ( rc != RCL_RET_OK )
+    {
+        while (true)
+        {
+            gpio_put(PICO_DEFAULT_LED_PIN, 1);
+            sleep_ms(500);
+            gpio_put(PICO_DEFAULT_LED_PIN, 0);
+            sleep_ms(500);
+        }
+    }
+    rclc_executor_add_subscription(&executor_, &stepper_subscriber_, &stepper_msg_, stepper_callback_, ON_NEW_DATA);
+
+#define PUBLISHER 0
+#if PUBLISHER
     ///// パブリッシャの作成 /////
     //! 砲台左のパブリッシャ
     rcl_timer_t gun_l_timer_;
@@ -466,52 +545,38 @@ int main()
     rclc_executor_add_timer(&executor_, &gun_r_timer_);
 
     //! 砲塔サーボのパブリッシャ
+    rcl_timer_t pose_timer_;
     rcl_timer_t roll_timer_;
     rcl_timer_t pitch_timer_;
     rcl_timer_t yaw_timer_;
     rcl_timer_t loading_timer_;
 
+#if INTEGRATE
+    rclc_publisher_init_default(&pose_publisher_, &node_, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Int32), "/pico/pose/level");
+    rclc_timer_init_default(&pose_timer_, &support_, RCL_MS_TO_NS(1000), pose_timer_callback_);
+    rclc_executor_add_timer(&executor_, &pose_timer_);
+#else
     rclc_publisher_init_default(&roll_publisher_, &node_, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Int32), "/pico/roll/level");
     rclc_timer_init_default(&roll_timer_, &support_, RCL_MS_TO_NS(1000), roll_timer_callback_);
     rclc_executor_add_timer(&executor_, &roll_timer_);
-
     rclc_publisher_init_default(&pitch_publisher_, &node_, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Int32), "/pico/pitch/level");
     rclc_timer_init_default(&pitch_timer_, &support_, RCL_MS_TO_NS(1000), pitch_timer_callback_);
     rclc_executor_add_timer(&executor_, &pitch_timer_);
-
     rclc_publisher_init_default(&yaw_publisher_, &node_, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Int32), "/pico/yaw/level");
     rclc_timer_init_default(&yaw_timer_, &support_, RCL_MS_TO_NS(1000), yaw_timer_callback_);
     rclc_executor_add_timer(&executor_, &yaw_timer_);
+#endif //! INTEGRATE
 
     rclc_publisher_init_default(&loading_publisher_, &node_, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Int32), "/pico/loading/level");
     rclc_timer_init_default(&loading_timer_, &support_, RCL_MS_TO_NS(1000), loading_timer_callback_);
     rclc_executor_add_timer(&executor_, &loading_timer_);
-
     //! ステッピングモータのパブリッシャ
     rcl_timer_t stepper_timer_;
     rclc_publisher_init_default(&stepper_publisher_, &node_, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Float32), "/pico/stepper/position/debug");
     rclc_timer_init_default(&stepper_timer_, &support_, RCL_MS_TO_NS(1000), stepper_timer_callback_);
     rclc_executor_add_timer(&executor_, &stepper_timer_);
 
-    ///// サブスクライバの作成 /////
-    //! 砲台左のサブスクライバ
-    rclc_subscription_init_default(&gun_l_subscriber_, &node_, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Float32), "/pico/gun/left/pwm/duty");
-    rclc_executor_add_subscription(&executor_, &gun_l_subscriber_, &gun_l_msg_, gun_l_callback_, ON_NEW_DATA);
-    //! 砲台右のサブスクライバ
-    rclc_subscription_init_default(&gun_r_subscriber_, &node_, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Float32), "/pico/gun/right/pwm/duty");
-    rclc_executor_add_subscription(&executor_, &gun_r_subscriber_, &gun_r_msg_, gun_r_callback_, ON_NEW_DATA);
-    //! 砲塔サーボのサブスクライバ
-    rclc_subscription_init_default(&roll_subscriber_, &node_, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Float32), "/pico/roll/deg");
-    rclc_executor_add_subscription(&executor_, &roll_subscriber_, &roll_msg_, roll_callback_, ON_NEW_DATA);
-    rclc_subscription_init_default(&pitch_subscriber_, &node_, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Float32), "/pico/pitch/deg");
-    rclc_executor_add_subscription(&executor_, &pitch_subscriber_, &pitch_msg_, pitch_callback_, ON_NEW_DATA);
-    rclc_subscription_init_default(&yaw_subscriber_, &node_, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Float32), "/pico/yaw/deg");
-    rclc_executor_add_subscription(&executor_, &yaw_subscriber_, &yaw_msg_, yaw_callback_, ON_NEW_DATA);
-    rclc_subscription_init_default(&loading_subscriber_, &node_, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Float32), "/pico/loading/deg");
-    rclc_executor_add_subscription(&executor_, &loading_subscriber_, &loading_msg_, loading_callback_, ON_NEW_DATA);
-    //! ステッピングモータのサブスクライバ
-    rclc_subscription_init_default(&stepper_subscriber_, &node_, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Float32), "/pico/stepper/position/raw");
-    rclc_executor_add_subscription(&executor_, &stepper_subscriber_, &stepper_msg_, stepper_callback_, ON_NEW_DATA);
+#endif //! PUBLISHER
 
     while(true)
     {
