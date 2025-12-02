@@ -4,6 +4,25 @@
 #include "pico/stdlib.h"
 #include <rcl/rcl.h>
 
+///// デバッグ設定 /////
+#define INTEGRATE 1
+#define STEPPER_UART 1
+
+///// PIN 設定 /////
+#define GUN_L_PIN 0     //! GPIO0
+#define GUN_R_PIN 1     //! GPIO1
+
+#define ROLL_PIN 2      //! GPIO2
+#define PITCH_PIN 3     //! GPIO3
+
+#define YAW_PIN 4       //! GPIO4
+#define LOADING_PIN 5   //! GPIO5
+
+#define STEPPER_PIN 6   //! GPIO6
+
+#define UART_TX_PIN 21  //! GPIO21
+#define UART_RX_PIN 22  //! GPIO22
+
 ///// micro-ROS /////
 #define RMW_UROS_MAX_NODES            1
 #define RMW_UROS_MAX_PUBLISHERS       8
@@ -14,9 +33,6 @@
 #define RMW_UROS_MAX_WAIT_SET_ENTRIES 24
 
 ///// 砲身ブラシレス /////
-#define GUN_L_PIN 2
-#define GUN_R_PIN 3
-
 #define APPARENTLY_MIN -100.0f
 #define APPARENTLY_MAX  100.0f
 #define HIGH_TIME_MIN   1020.0f
@@ -24,16 +40,7 @@
 #define RS2205_PWM_HZ 50.0f
 #define RS2205_PWM_RESOLUTION 65536    //! 9765.625 < RESOLUTION < 2500000
 
-#define RESCALE(X, I_MAX, I_MIN, O_MAX, O_MIN) ((O_MAX - O_MIN) * (float) ((X - I_MIN) / (float) (I_MAX - I_MIN)) + O_MIN)
-#define HZ2US(HERTZ) (1000 * 1000 * 1 / ((float) HERTZ))
-
 ///// 砲塔サーボ /////
-#define INTEGRATE 1
-#define ROLL_PIN 4
-#define PITCH_PIN 5
-#define YAW_PIN 6
-#define LOADING_PIN 7
-
 /* Futaba S3003 */
 #define SERVO_ANGLE_MIN 0
 #define SERVO_ANGLE_MAX 180
@@ -42,8 +49,13 @@
 #define SERVO_RESOLUTION 65536
 #define SERVO_HZ 50
 
-///// ステッピング /////
-#define STEPPER_PIN 8
+///// UART /////
+#define UART_ID uart0
+#define BAUD_RATE 115200
+
+///// Macro /////
+#define RESCALE(X, I_MAX, I_MIN, O_MAX, O_MIN) ((O_MAX - O_MIN) * (float) ((X - I_MIN) / (float) (I_MAX - I_MIN)) + O_MIN)
+#define HZ2US(HERTZ) (1000 * 1000 * 1 / ((float) HERTZ))
 
 bool check_agent_alive();
 void init_ros();
@@ -73,7 +85,7 @@ void stepper_timer_callback_(rcl_timer_t *, int64_t);
 void set_step_rate(float);
 void init_uart();
 void init_stepper();
-void init_gpio();
+void init_led();
 bool time_update_callback(struct repeating_timer *);
 void init_time();
 
