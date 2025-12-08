@@ -1,3 +1,11 @@
+#include "servo.h"
+
+#include "hardware/clocks.h"
+
+#include "std_msgs/msg/float32.h"
+#include "std_msgs/msg/int32.h"
+#include "geometry_msgs/msg/vector3.h"
+
 uint16_t servo_deg2level(float degree)
 {
     if(degree < SERVO_ANGLE_MIN)
@@ -119,7 +127,7 @@ void loading_timer_callback_(rcl_timer_t * timer, int64_t last_call_time)
     rcl_publish(&loading_publisher_, &pub_msg_, NULL);
 }
 
-void init_servo_pwm()
+void servo_init()
 {
     ///// 砲塔 /////
     //! PWM 周波数と分解能の設定

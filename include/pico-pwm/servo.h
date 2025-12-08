@@ -1,3 +1,38 @@
+#ifndef __SERVO_H__
+#define __SERVO_H__
+
+#include "preload.h"
+
+#include "hardware/gpio.h"
+#include "hardware/pwm.h"
+
+#include <rcl/rcl.h>
+#include "std_msgs/msg/int32.h"
+#include "geometry_msgs/msg/vector3.h"
+
+///// 砲塔サーボ /////
+/* Futaba S3003 */
+#define SERVO_ANGLE_MIN 0
+#define SERVO_ANGLE_MAX 180
+#define SERVO_PULSE_LENGTH_MIN  500
+#define SERVO_PULSE_LENGTH_MAX 3000
+#define SERVO_RESOLUTION 65536
+#define SERVO_HZ 50
+
+uint16_t servo_deg2level(float);
+uint16_t set_servo_pwm(uint32_t, float);
+void pose_callback_(const void *);
+void pose_timer_callback_(rcl_timer_t *, int64_t);
+void roll_callback_(const void *);
+void roll_timer_callback_(rcl_timer_t *, int64_t);
+void pitch_callback_(const void *);
+void pitch_timer_callback_(rcl_timer_t *, int64_t);
+void yaw_callback_(const void *);
+void yaw_timer_callback_(rcl_timer_t *, int64_t);
+void loading_callback_(const void *);
+void loading_timer_callback_(rcl_timer_t *, int64_t);
+void servo_init();
+
 extern rcl_publisher_t pose_publisher_;
 extern rcl_subscription_t pose_subscriber_;
 extern geometry_msgs__msg__Vector3 pose_msg_;
@@ -21,4 +56,6 @@ extern uint16_t loading_level_;
 extern rcl_publisher_t loading_publisher_;
 extern rcl_subscription_t loading_subscriber_;
 extern std_msgs__msg__Int32 loading_msg_;
+
+#endif
 

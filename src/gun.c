@@ -1,3 +1,20 @@
+#include "gun.h"
+
+#include "hardware/clocks.h"
+
+#include <rcl/rcl.h>
+
+uint16_t gun_l_level_;
+rcl_publisher_t gun_l_publisher_;
+rcl_subscription_t gun_l_subscriber_;
+std_msgs__msg__Float32 gun_l_msg_;
+
+uint16_t gun_r_level_;
+rcl_publisher_t gun_r_publisher_;
+rcl_subscription_t gun_r_subscriber_;
+std_msgs__msg__Float32 gun_r_msg_;
+
+
 float rs2205_adaptor(float ad)
 {
     uint32_t high_time = RESCALE(ad, APPARENTLY_MAX, APPARENTLY_MIN, HIGH_TIME_MAX, HIGH_TIME_MIN);
@@ -75,7 +92,7 @@ void gun_r_timer_callback_(rcl_timer_t * timer, int64_t last_call_time)
     rcl_publish(&gun_r_publisher_, &pub_msg_, NULL);
 }
 
-void init_gun_pwm()
+void gun_init()
 {
     ///// 砲台 /////
     //! PWM 周波数と分解能の設定

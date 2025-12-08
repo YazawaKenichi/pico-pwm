@@ -1,3 +1,9 @@
+#include "position.h"
+
+#include "hardware/clocks.h"
+
+#include "std_msgs/msg/float32.h"
+
 void uart_write_float(float value)
 {
 #if 0
@@ -20,7 +26,7 @@ void uart_write_string(char * message_)
 void stepper_callback_(const void * msgin)
 {
     const std_msgs__msg__Float32 * msg = (const std_msgs__msg__Float32 *) msgin;
-    put_led(!get_led());
+    led_set(!led_get());
     if(msg == NULL)
     {
         return;
@@ -78,7 +84,7 @@ void init_uart()
     gpio_set_function(UART_RX_PIN, GPIO_FUNC_UART);
 }
 
-void init_stepper()
+void position_init()
 {
 #if STEPPER_DRIVE
     ///// ステッピングモータ /////

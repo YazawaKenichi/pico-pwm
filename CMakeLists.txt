@@ -12,6 +12,11 @@ link_directories(external/microros_pico/libmicroros)
 
 add_executable(pico_pwm
     src/main.c
+    src/gun.c
+    src/led.c
+    src/position.c
+    src/ros2.c
+    src/servo.c
     external/microros_pico/pico_uart_transport.c
 )
 
