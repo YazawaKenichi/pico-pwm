@@ -47,7 +47,37 @@ uint16_t servo_deg2level(float degree)
 
 uint16_t set_servo_pwm(uint32_t pin, float degree)
 {
-    uint16_t level = servo_deg2level(degree);
+    float degree_;
+    float imin, imax;
+    float omin, omax;
+    switch(pin)
+    {
+        case ROLL_PIN:
+            imin = ROLL_IN_MIN;
+            imax = ROLL_IN_MAX;
+            omin = ROLL_OUT_MIN;
+            omax = ROLL_OUT_MAX;
+        case PITCH_PIN:
+            imin = PITCH_IN_MIN;
+            imax = PITCH_IN_MAX;
+            omin = PITCH_OUT_MIN;
+            omax = PITCH_OUT_MAX;
+        case YAW_PIN:
+            imin = YAW_IN_MIN;
+            imax = YAW_IN_MAX;
+            omin = YAW_OUT_MIN;
+            omax = YAW_OUT_MAX;
+        case LOADING_PIN:
+            imin = LOADING_IN_MAX;
+            imax = LOADING_IN_MIN;
+            omin = LOADING_OUT_MAX;
+            omax = LOADING_OUT_MIN;
+        default:
+            return -1;
+    }
+    degree_ = (degree_ > imax) ? imax : (degree_ < imin) ? imin : degree_;
+    degree_ = RESCALE(degree, imax, imin, omin, omax);
+    uint16_t level = servo_deg2level(degree_);
     pwm_set_gpio_level(pin, level);
     return level;
 }
@@ -163,23 +193,28 @@ void servo_init()
 
     //! PWM ピンの設定
     gpio_set_function(ROLL_PIN, GPIO_FUNC_PWM);
-    uint slice_roll = pwm_gpio_to_slice_num(ROLL_PIN);
-    pwm_init(slice_roll, &servo_cfg, true);
-    roll_level_ = set_servo_pwm(ROLL_PIN, 90);
-
     gpio_set_function(PITCH_PIN, GPIO_FUNC_PWM);
-    uint slice_pitch = pwm_gpio_to_slice_num(PITCH_PIN);
-    pwm_init(slice_pitch, &servo_cfg, true);
-    pitch_level_ = set_servo_pwm(PITCH_PIN, 90);
-
     gpio_set_function(YAW_PIN, GPIO_FUNC_PWM);
-    uint slice_yaw = pwm_gpio_to_slice_num(YAW_PIN);
-    pwm_init(slice_yaw, &servo_cfg, true);
-    yaw_level_ = set_servo_pwm(YAW_PIN, 90);
-
     gpio_set_function(LOADING_PIN, GPIO_FUNC_PWM);
+
+    uint slice_roll = pwm_gpio_to_slice_num(ROLL_PIN);
+    uint slice_pitch = pwm_gpio_to_slice_num(PITCH_PIN);
+    uint slice_yaw = pwm_gpio_to_slice_num(YAW_PIN);
     uint slice_loading = pwm_gpio_to_slice_num(LOADING_PIN);
+
+    pwm_init(slice_roll, &servo_cfg, true);
+    pwm_init(slice_pitch, &servo_cfg, true);
+    pwm_init(slice_yaw, &servo_cfg, true);
     pwm_init(slice_loading, &servo_cfg, true);
-    loading_level_ = set_servo_pwm(LOADING_PIN, 90);
+
+    roll_level_ = set_servo_pwm(ROLL_PIN, 0);
+    pitch_level_ = set_servo_pwm(PITCH_PIN, 0);
+    yaw_level_ = set_servo_pwm(YAW_PIN, 0);
+    loading_level_ = set_servo_pwm(LOADING_PIN, 0);
+
+    pwm_set_enabled(slice_roll, true);
+    pwm_set_enabled(slice_pitch, true);
+    pwm_set_enabled(slice_yaw, true);
+    pwm_set_enabled(slice_loading, true);
 }
 
