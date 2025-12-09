@@ -21,6 +21,9 @@ micro-ROS Agent をビルドする話を書く
 ROS_LOCALHOST_ONLY と ROS_DOMAIN_ID の設定値の話も書かないとだめかも
 
 # Usage
+!!! Warning
+    最新コミットとかなり差異があります。以下のコマンドでは動かない可能性あり。
+
 0. 配線
 
 ** 配線図とか載せたい **
@@ -72,10 +75,23 @@ ROS_LOCALHOST_ONLY と ROS_DOMAIN_ID の設定値の話も書かないとだめ�
 ## /pico/pose
 砲身の向きを決定するトピック
 
-単位は `degree` 範囲は `0 ~ 180`
+値の範囲は以下の通り
+
+|Axis|Min|Center|Max
+|:---:|:---:|:---:|:---:
+|ROLL|-90|0|90
+|YAW|-45|0|45
+|PITCH|-90|0|90
+
+## /pico/loading/deg
+球を押し出すサーボを操作するトピック
+
+こっちは `deg` だけど `0` で装填 `1` で撃発
 
 ## /pico/stepper/position/raw
 砲台の位置を決定するトピック
+
+`0 ~ 2000` で指定できるようにしてある（けど現状動かない）
 
 # ライセンス
 libmicroros は [micro-ROS/micro_ros_raspberrypi_pico_sdk](https://github.com/micro-ROS/micro_ros_raspberrypi_pico_sdk/tree/humble) のライセンスに依存します。
