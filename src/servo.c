@@ -6,6 +6,30 @@
 #include "std_msgs/msg/int32.h"
 #include "geometry_msgs/msg/vector3.h"
 
+rcl_publisher_t pose_publisher_;
+rcl_subscription_t pose_subscriber_;
+geometry_msgs__msg__Vector3 pose_msg_;
+
+uint16_t roll_level_;
+rcl_publisher_t roll_publisher_;
+rcl_subscription_t roll_subscriber_;
+std_msgs__msg__Int32 roll_msg_;
+
+uint16_t pitch_level_;
+rcl_publisher_t pitch_publisher_;
+rcl_subscription_t pitch_subscriber_;
+std_msgs__msg__Int32 pitch_msg_;
+
+uint16_t yaw_level_;
+rcl_publisher_t yaw_publisher_;
+rcl_subscription_t yaw_subscriber_;
+std_msgs__msg__Int32 yaw_msg_;
+
+uint16_t loading_level_;
+rcl_publisher_t loading_publisher_;
+rcl_subscription_t loading_subscriber_;
+std_msgs__msg__Int32 loading_msg_;
+
 uint16_t servo_deg2level(float degree)
 {
     if(degree < SERVO_ANGLE_MIN)
@@ -58,7 +82,7 @@ void pose_timer_callback_(rcl_timer_t * timer, int64_t last_call_time)
     pub_msg_.x = roll_level_;
     pub_msg_.y = pitch_level_;
     pub_msg_.z = yaw_level_;
-    rcl_publish(&pose_publisher_, &pub_msg_, NULL);
+    rcl_ret_t rc = rcl_publish(&pose_publisher_, &pub_msg_, NULL);
 }
 
 void roll_timer_callback_(rcl_timer_t * timer, int64_t last_call_time)
@@ -67,7 +91,7 @@ void roll_timer_callback_(rcl_timer_t * timer, int64_t last_call_time)
     (void) last_call_time;
     std_msgs__msg__Int32 pub_msg_;
     pub_msg_.data = roll_level_;
-    rcl_publish(&roll_publisher_, &pub_msg_, NULL);
+    rcl_ret_t rc = rcl_publish(&roll_publisher_, &pub_msg_, NULL);
 }
 
 void pitch_callback_(const void * msgin)
@@ -86,7 +110,7 @@ void pitch_timer_callback_(rcl_timer_t * timer, int64_t last_call_time)
     (void) last_call_time;
     std_msgs__msg__Int32 pub_msg_;
     pub_msg_.data = pitch_level_;
-    rcl_publish(&pitch_publisher_, &pub_msg_, NULL);
+    rcl_ret_t rc = rcl_publish(&pitch_publisher_, &pub_msg_, NULL);
 }
 
 void yaw_callback_(const void * msgin)
@@ -105,7 +129,7 @@ void yaw_timer_callback_(rcl_timer_t * timer, int64_t last_call_time)
     (void) last_call_time;
     std_msgs__msg__Int32 pub_msg_;
     pub_msg_.data = yaw_level_;
-    rcl_publish(&yaw_publisher_, &pub_msg_, NULL);
+    rcl_ret_t rc = rcl_publish(&yaw_publisher_, &pub_msg_, NULL);
 }
 
 void loading_callback_(const void * msgin)
@@ -124,7 +148,7 @@ void loading_timer_callback_(rcl_timer_t * timer, int64_t last_call_time)
     (void) last_call_time;
     std_msgs__msg__Int32 pub_msg_;
     pub_msg_.data = loading_level_;
-    rcl_publish(&loading_publisher_, &pub_msg_, NULL);
+    rcl_ret_t rc = rcl_publish(&loading_publisher_, &pub_msg_, NULL);
 }
 
 void servo_init()

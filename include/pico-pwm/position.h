@@ -12,6 +12,8 @@
 
 #include <math.h>
 
+#include "led.h"
+
 ///// UART /////
 #define UART_ID uart0
 #define BAUD_RATE 115200

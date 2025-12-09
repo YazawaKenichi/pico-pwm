@@ -20,12 +20,12 @@
 #define RMW_UROS_MAX_TIMERS           8
 #define RMW_UROS_MAX_WAIT_SET_ENTRIES 24
 
-extern bool check_agent_alive();
-extern void ros2_init();
-extern int ros2_spin();
-extern rcl_ret_t ros2_generate_node();
-extern rcl_ret_t ros2_generate_subscriber();
-extern rcl_ret_t ros2_generate_publisher();
+bool check_agent_alive();
+void ros2_init();
+int ros2_spin();
+rcl_ret_t ros2_generate_node();
+rcl_ret_t ros2_generate_subscriber();
+rcl_ret_t ros2_generate_publisher();
 
 #endif
 

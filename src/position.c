@@ -4,6 +4,11 @@
 
 #include "std_msgs/msg/float32.h"
 
+float stepper_bef_;
+rcl_publisher_t stepper_publisher_;     // 未使用 値をパブリッシュするときに使える用
+rcl_subscription_t stepper_subscriber_;
+std_msgs__msg__Float32 stepper_msg_;
+
 void uart_write_float(float value)
 {
 #if 0
@@ -52,7 +57,7 @@ void stepper_timer_callback_(rcl_timer_t * timer, int64_t last_call_time)
     (void) last_call_time;
     std_msgs__msg__Float32 pub_msg_;
     pub_msg_.data = stepper_bef_;
-    rcl_publish(&stepper_publisher_, &pub_msg_, NULL);
+    rcl_ret_t rc = rcl_publish(&stepper_publisher_, &pub_msg_, NULL);
 }
 
 void set_step_rate(float freq_hz)

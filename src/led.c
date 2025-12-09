@@ -2,6 +2,8 @@
 
 #include "pico/stdlib.h"
 
+bool led_state_;
+
 void led_set(bool b)
 {
     gpio_put(PICO_DEFAULT_LED_PIN, b);

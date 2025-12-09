@@ -80,7 +80,7 @@ void gun_l_timer_callback_(rcl_timer_t * timer, int64_t last_call_time)
     (void) last_call_time;
     std_msgs__msg__Int32 pub_msg_;
     pub_msg_.data = gun_l_level_;
-    rcl_publish(&gun_l_publisher_, &pub_msg_, NULL);
+    rcl_ret_t rc = rcl_publish(&gun_l_publisher_, &pub_msg_, NULL);
 }
 
 void gun_r_timer_callback_(rcl_timer_t * timer, int64_t last_call_time)
@@ -89,7 +89,7 @@ void gun_r_timer_callback_(rcl_timer_t * timer, int64_t last_call_time)
     (void) last_call_time;
     std_msgs__msg__Int32 pub_msg_;
     pub_msg_.data = gun_r_level_;
-    rcl_publish(&gun_r_publisher_, &pub_msg_, NULL);
+    rcl_ret_t rc = rcl_publish(&gun_r_publisher_, &pub_msg_, NULL);
 }
 
 void gun_init()
