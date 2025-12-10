@@ -18,6 +18,7 @@ void uart_write_float(float value)
     conv.f = value;
     uart_write_blocking(UART_ID, conv.b, 4);
 #endif
+    printf("uart_write_float called: %f\n", (double)value);
     char buf[32];
     int len = snprintf(buf, sizeof(buf), "%f\r\n", (float) value);
     uart_write_blocking(UART_ID, (uint8_t *)buf, len);
