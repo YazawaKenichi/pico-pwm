@@ -1,26 +1,26 @@
-#include "main.h"
+#include "pico/stdlib.h"
+#include "hardware/uart.h"
+#include "hardware/gpio.h"
 
-int main_init()
-{
-    led_init();
-    // init_time();
+#define UART_ID uart0
+#define BAUD_RATE 115200
 
-    ros2_init();
-
-    gun_init();
-    servo_init();
-    position_init();
-
-}
+#define UART_TX_PIN 16   // 物理ピン21
+#define UART_RX_PIN 17   // 物理ピン22（今回は未使用でもOK）
 
 int main()
 {
-    main_init();
-    while(true)
-    {
-        ros2_spin();
-    }
+    stdio_init_all();
 
-    return 0;
+    uart_init(UART_ID, BAUD_RATE);
+    gpio_set_function(UART_TX_PIN, GPIO_FUNC_UART);
+    // RX は今回使わないなら設定しなくてもよい
+    // gpio_set_function(UART_RX_PIN, GPIO_FUNC_UART);
+
+    while (true) {
+        const char* msg = "Hello from Pico!\r\n";
+        uart_write_blocking(UART_ID, (const uint8_t*)msg, strlen(msg));
+        sleep_ms(1000);
+    }
 }
 
