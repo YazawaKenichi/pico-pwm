@@ -16,7 +16,7 @@
 #define UART_TX_PIN 16
 #define UART_RX_PIN 17
 
-#define RESCALE(X, I_MAX, I_MIN, O_MAX, O_MIN) ((O_MAX - O_MIN) * (float) ((X - I_MIN) / (float) (I_MAX - I_MIN)) + O_MIN)
+#define RESCALE(X, I_MAX, I_MIN, O_MAX, O_MIN) ((O_MAX - O_MIN) * (float) (((X) - I_MIN) / (float) (I_MAX - I_MIN)) + O_MIN)
 #define HZ2US(HERTZ) (1000 * 1000 * 1 / ((float) HERTZ))
 
 ///// デバッグ設定 /////

@@ -73,10 +73,13 @@ uint16_t set_servo_pwm(uint32_t pin, float degree)
             omin = LOADING_OUT_MAX;
             omax = LOADING_OUT_MIN;
         default:
-            return -1;
+            imin = 0;
+            imax = 180;
+            omin = 0;
+            omax = 180;
     }
     degree_ = (degree_ > imax) ? imax : (degree_ < imin) ? imin : degree_;
-    degree_ = RESCALE(degree, imax, imin, omin, omax);
+    degree_ = RESCALE(degree, imax, imin, omax, omin);
     uint16_t level = servo_deg2level(degree_);
     pwm_set_gpio_level(pin, level);
     return level;
