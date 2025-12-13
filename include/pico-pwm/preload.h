@@ -3,15 +3,15 @@
 
 ///// PIN 設定 /////
 #define GUN_L_PIN 0
-#define GUN_R_PIN 1
+#define GUN_R_PIN 9
 
 #define ROLL_PIN 2
 #define PITCH_PIN 3
 
-#define YAW_PIN 5
-#define LOADING_PIN 6
+#define YAW_PIN 4
+#define LOADING_PIN 5
 
-#define STEPPER_PIN 9
+#define STEPPER_PIN 6
 
 #define UART_TX_PIN 16
 #define UART_RX_PIN 17

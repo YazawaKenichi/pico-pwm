@@ -110,7 +110,8 @@ void gun_init()
     pwm_init(slice_right, &gun_cfg, true);
     pwm_set_enabled(slice_left, true);
     pwm_set_enabled(slice_right, true);
-    gun_l_level_ = set_gun_pwm(GUN_L_PIN, 0);
     gun_r_level_ = set_gun_pwm(GUN_R_PIN, 0);
+    gun_l_level_ = set_gun_pwm(GUN_L_PIN, 0);
+    sleep_ms(3000);
 }
 
