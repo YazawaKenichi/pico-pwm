@@ -10,14 +10,38 @@
 #include "std_msgs/msg/int32.h"
 #include "geometry_msgs/msg/vector3.h"
 
+#define FUTABA 0
 ///// 砲塔サーボ /////
-/* Futaba S3003 */
 #define SERVO_ANGLE_MIN 0
 #define SERVO_ANGLE_MAX 180
+#if FUTABA
 #define SERVO_PULSE_LENGTH_MIN  500
-#define SERVO_PULSE_LENGTH_MAX 3000
+#else
+#define SERVO_PULSE_LENGTH_MIN 1000
+#endif
+#define SERVO_PULSE_LENGTH_MAX 2000
 #define SERVO_RESOLUTION 65536
 #define SERVO_HZ 50
+
+#define ROLL_IN_MIN -90
+#define ROLL_IN_MAX 90
+#define ROLL_OUT_MIN 0
+#define ROLL_OUT_MAX 180
+
+#define PITCH_IN_MIN -45
+#define PITCH_IN_MAX 45
+#define PITCH_OUT_MIN 0
+#define PITCH_OUT_MAX 90
+
+#define YAW_IN_MIN -90
+#define YAW_IN_MAX 90
+#define YAW_OUT_MIN 0
+#define YAW_OUT_MAX 180
+
+#define LOADING_IN_MIN 0
+#define LOADING_IN_MAX 1
+#define LOADING_OUT_MIN 10
+#define LOADING_OUT_MAX 130
 
 uint16_t servo_deg2level(float);
 uint16_t set_servo_pwm(uint32_t, float);

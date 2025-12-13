@@ -47,7 +47,40 @@ uint16_t servo_deg2level(float degree)
 
 uint16_t set_servo_pwm(uint32_t pin, float degree)
 {
-    uint16_t level = servo_deg2level(degree);
+    float degree_;
+    float imin, imax;
+    float omin, omax;
+    switch(pin)
+    {
+        case ROLL_PIN:
+            imin = ROLL_IN_MIN;
+            imax = ROLL_IN_MAX;
+            omin = ROLL_OUT_MIN;
+            omax = ROLL_OUT_MAX;
+        case PITCH_PIN:
+            imin = PITCH_IN_MIN;
+            imax = PITCH_IN_MAX;
+            omin = PITCH_OUT_MIN;
+            omax = PITCH_OUT_MAX;
+        case YAW_PIN:
+            imin = YAW_IN_MIN;
+            imax = YAW_IN_MAX;
+            omin = YAW_OUT_MIN;
+            omax = YAW_OUT_MAX;
+        case LOADING_PIN:
+            imin = LOADING_IN_MAX;
+            imax = LOADING_IN_MIN;
+            omin = LOADING_OUT_MAX;
+            omax = LOADING_OUT_MIN;
+        default:
+            imin = 0;
+            imax = 180;
+            omin = 0;
+            omax = 180;
+    }
+    degree_ = (degree_ > imax) ? imax : (degree_ < imin) ? imin : degree_;
+    degree_ = RESCALE(degree, imax, imin, omax, omin);
+    uint16_t level = servo_deg2level(degree_);
     pwm_set_gpio_level(pin, level);
     return level;
 }
