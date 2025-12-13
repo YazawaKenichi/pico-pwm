@@ -13,5 +13,7 @@ while [ ! -d "$PICO_DIR" ] ; do
     sleep 1
 done
 
+echo "Done!"
+
 cp *.uf2 /media/yazawa/RPI-RP2
 
