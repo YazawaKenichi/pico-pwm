@@ -12,10 +12,20 @@ float stepper_bef_;
 rcl_publisher_t stepper_publisher_;     // 未使用 値をパブリッシュするときに使える用
 rcl_subscription_t stepper_subscriber_;
 std_msgs__msg__Float32 stepper_msg_;
-volatile int received_value_ = 0;
-volatile int rx_buffer = 0;
-bool goaled_ = true;
 rcl_publisher_t goal_publisher_;
+bool goaled_;
+
+void init_trigger()
+{
+    gpio_init(TRIGGER_PIN);
+    gpio_set_dir(TRIGGER_PIN, GPIO_IN);
+    gpio_pull_up(TRIGGER_PIN);
+}
+
+bool get_trigger()
+{
+    return gpio_get(TRIGGER_PIN);
+}
 
 void uart_write_float(float value)
 {
@@ -35,36 +45,6 @@ void uart_write_float(float value)
 void uart_write_string(char * message_)
 {
     uart_write_blocking(UART_ID, (const uint8_t *) message_, strlen(message_));
-}
-
-void on_uart_rx()
-{
-    led_set(!led_get());
-    while(uart_is_readable(UART_ID))
-    {
-        char c = uart_getc(UART_ID);
-        if(c >= '0' && c <= '9')
-        {
-            rx_buffer = rx_buffer * 10 + (c - '0');
-        }
-        else if(c == '\n')
-        {
-            received_value_ = rx_buffer;
-            rx_buffer = 0;
-        }
-    }
-}
-
-void uart_irq_init()
-{
-    irq_set_exclusive_handler(UART0_IRQ, on_uart_rx);
-    irq_set_enabled(UART0_IRQ, true);
-    uart_set_irq_enables(UART_ID, true, false);
-}
-
-bool get_goal()
-{
-    return received_value_ ? true : false;
 }
 
 void stepper_callback_(const void * msgin)
@@ -127,7 +107,6 @@ void init_uart()
     gpio_set_function(UART_RX_PIN, GPIO_FUNC_UART);
 
     uart_set_fifo_enabled(UART_ID, false);
-    uart_irq_init();
 }
 
 void position_init()
@@ -148,6 +127,23 @@ void position_init()
 #if STEPPER_UART
     init_uart();
 #endif
+    init_trigger();
+    init_goal();
+}
+
+void init_goal()
+{
+    goaled_ = true;
+}
+
+bool get_goal()
+{
+    return goaled_;
+}
+
+void set_goal(bool tf)
+{
+    goaled_ = tf;
 }
 
 void goal_timer_callback_(rcl_timer_t * timer, int64_t last_call_time)
@@ -155,7 +151,7 @@ void goal_timer_callback_(rcl_timer_t * timer, int64_t last_call_time)
     (void) timer;
     (void) last_call_time;
     std_msgs__msg__Bool pub_msg_;
-    pub_msg_.data = goaled_;
+    pub_msg_.data = get_trigger();
     rcl_ret_t rc = rcl_publish(&goal_publisher_, &pub_msg_, NULL);
 }
 

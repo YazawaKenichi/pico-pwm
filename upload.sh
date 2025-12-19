@@ -9,11 +9,11 @@ make -j4
 PICO_DIR="/media/yazawa/RPI-RP2"
 
 while [ ! -d "$PICO_DIR" ] ; do
-    echo "Pico が書き込みモードで接続されていません\r"
+    echo -en "Pico が書き込みモードで接続されていません\r"
     sleep 1
 done
 
-echo "Done!"
+echo -e "\nDone!"
 
 cp *.uf2 /media/yazawa/RPI-RP2
 

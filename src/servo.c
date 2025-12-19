@@ -1,10 +1,10 @@
 #include "servo.h"
 
-#include "hardware/clocks.h"
-
 #include "std_msgs/msg/float32.h"
 #include "std_msgs/msg/int32.h"
 #include "geometry_msgs/msg/vector3.h"
+
+#include "hardware/clocks.h"
 
 rcl_publisher_t pose_publisher_;
 rcl_subscription_t pose_subscriber_;
@@ -173,6 +173,11 @@ void loading_callback_(const void * msgin)
     loading_level_ = set_servo_pwm(LOADING_PIN, msg->data);
 }
 
+void set_loading(bool tf)
+{
+    loading_level_ = set_servo_pwm(LOADING_PIN, tf ? LOADING_OUT_MIN : LOADING_OUT_MAX);
+}
+
 void loading_timer_callback_(rcl_timer_t * timer, int64_t last_call_time)
 {
     (void) timer;
@@ -208,10 +213,10 @@ void servo_init()
     pwm_init(slice_yaw, &servo_cfg, true);
     pwm_init(slice_loading, &servo_cfg, true);
 
-    roll_level_ = set_servo_pwm(ROLL_PIN, 90);
-    pitch_level_ = set_servo_pwm(PITCH_PIN, 45);
-    yaw_level_ = set_servo_pwm(YAW_PIN, 90);
-    loading_level_ = set_servo_pwm(LOADING_PIN, 10);
+    roll_level_ = set_servo_pwm(ROLL_PIN, (ROLL_OUT_MIN + ROLL_OUT_MAX) / 2);
+    pitch_level_ = set_servo_pwm(PITCH_PIN, (PITCH_OUT_MIN + PITCH_OUT_MAX) / 2);
+    yaw_level_ = set_servo_pwm(YAW_PIN, (YAW_OUT_MIN + YAW_OUT_MAX) / 2);
+    loading_level_ = set_servo_pwm(LOADING_PIN, LOADING_OUT_MIN);
 
     pwm_set_enabled(slice_roll, true);
     pwm_set_enabled(slice_pitch, true);

@@ -1,6 +1,7 @@
 #include "ros2.h"
 
 #include "gun.h"
+#include "servo.h"
 #include "position.h"
 
 #include "std_msgs/msg/int32.h"
@@ -38,6 +39,7 @@ void ros2_init()
 
 int ros2_spin()
 {
+    set_loading(get_trigger());
     rclc_executor_spin_some(&executor_, RCL_MS_TO_NS(1));
     return 0;
 }
@@ -86,13 +88,14 @@ rcl_ret_t ros2_generate_subscriber()
 
 rcl_ret_t ros2_generate_publisher()
 {
+#define PUBLISHER 0
+    rcl_ret_t rc;
+#if PUBLISHER
     rcl_timer_t goal_timer_;
     rclc_publisher_init_default(&goal_publisher_, &node_, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Bool), "/pico/stepper/goal");
     rclc_timer_init_default(&goal_timer_, &support_, RCL_MS_TO_NS(1000), goal_timer_callback_);
     rclc_executor_add_timer(&executor_, &goal_timer_);
-#define PUBLISHER 0
-    rcl_ret_t rc;
-#if PUBLISHER
+
     rcl_timer_t gun_l_timer_;
     rclc_publisher_init_default(&gun_l_publisher_, &node_, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Int32), "/pico/gun/left/pwm/level");
     rclc_timer_init_default(&gun_l_timer_, &support_, RCL_MS_TO_NS(1000), gun_l_timer_callback_);
