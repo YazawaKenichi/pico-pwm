@@ -39,6 +39,7 @@ void uart_write_string(char * message_)
 
 void on_uart_rx()
 {
+    led_set(!led_get());
     while(uart_is_readable(UART_ID))
     {
         char c = uart_getc(UART_ID);
