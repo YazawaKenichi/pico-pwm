@@ -10,7 +10,6 @@ int main_init()
     gun_init();
     servo_init();
     position_init();
-
 }
 
 int main()

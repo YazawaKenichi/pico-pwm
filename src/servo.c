@@ -208,10 +208,10 @@ void servo_init()
     pwm_init(slice_yaw, &servo_cfg, true);
     pwm_init(slice_loading, &servo_cfg, true);
 
-    roll_level_ = set_servo_pwm(ROLL_PIN, 0);
-    pitch_level_ = set_servo_pwm(PITCH_PIN, 0);
-    yaw_level_ = set_servo_pwm(YAW_PIN, 0);
-    loading_level_ = set_servo_pwm(LOADING_PIN, 0);
+    roll_level_ = set_servo_pwm(ROLL_PIN, 90);
+    pitch_level_ = set_servo_pwm(PITCH_PIN, 45);
+    yaw_level_ = set_servo_pwm(YAW_PIN, 90);
+    loading_level_ = set_servo_pwm(LOADING_PIN, 10);
 
     pwm_set_enabled(slice_roll, true);
     pwm_set_enabled(slice_pitch, true);
