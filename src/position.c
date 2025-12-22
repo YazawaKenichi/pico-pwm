@@ -148,7 +148,12 @@ void goal_timer_callback_(rcl_timer_t * timer, int64_t last_call_time)
     (void) timer;
     (void) last_call_time;
     std_msgs__msg__Bool pub_msg_;
-    pub_msg_.data = get_trigger();
-    rcl_ret_t rc = rcl_publish(&goal_publisher_, &pub_msg_, NULL);
+    bool b = get_trigger();
+    if(get_goal() != b)
+    {
+        pub_msg_.data = b;
+        rcl_ret_t rc = rcl_publish(&goal_publisher_, &pub_msg_, NULL);
+        set_goal(b);
+    }
 }
 
