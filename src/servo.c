@@ -177,6 +177,7 @@ void loading_callback_(const void * msgin)
 void set_loading(bool tf)
 {
     loading_level_ = set_servo_pwm(LOADING_PIN, tf ? LOADING_OUT_MIN : LOADING_OUT_MAX);
+    sleep_ms(500);
 }
 
 void loading_timer_callback_(rcl_timer_t * timer, int64_t last_call_time)
