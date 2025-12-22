@@ -13,6 +13,16 @@ rcl_allocator_t allocator_;
 rclc_support_t support_;
 rclc_executor_t executor_;
 
+rcl_timer_t goal_timer_;
+rcl_timer_t gun_l_timer_;
+rcl_timer_t gun_r_timer_;
+rcl_timer_t pose_timer_;
+rcl_timer_t roll_timer_;
+rcl_timer_t pitch_timer_;
+rcl_timer_t yaw_timer_;
+rcl_timer_t loading_timer_;
+rcl_timer_t stepper_timer_;
+
 // Agent の生存確認
 bool check_agent_alive()
 {
@@ -88,27 +98,19 @@ rcl_ret_t ros2_generate_subscriber()
 
 rcl_ret_t ros2_generate_publisher()
 {
-#define PUBLISHER 0
-    rcl_ret_t rc;
-#if PUBLISHER
-    rcl_timer_t goal_timer_;
     rclc_publisher_init_default(&goal_publisher_, &node_, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Bool), "/pico/stepper/goal");
     rclc_timer_init_default(&goal_timer_, &support_, RCL_MS_TO_NS(1000), goal_timer_callback_);
     rclc_executor_add_timer(&executor_, &goal_timer_);
 
-    rcl_timer_t gun_l_timer_;
+#define PUBLISHER 0
+    rcl_ret_t rc;
+#if PUBLISHER
     rclc_publisher_init_default(&gun_l_publisher_, &node_, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Int32), "/pico/gun/left/pwm/level");
     rclc_timer_init_default(&gun_l_timer_, &support_, RCL_MS_TO_NS(1000), gun_l_timer_callback_);
     rclc_executor_add_timer(&executor_, &gun_l_timer_);
-    rcl_timer_t gun_r_timer_;
     rclc_publisher_init_default(&gun_r_publisher_, &node_, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Int32), "/pico/gun/right/pwm/level");
     rclc_timer_init_default(&gun_r_timer_, &support_, RCL_MS_TO_NS(1000), gun_r_timer_callback_);
     rclc_executor_add_timer(&executor_, &gun_r_timer_);
-    rcl_timer_t pose_timer_;
-    rcl_timer_t roll_timer_;
-    rcl_timer_t pitch_timer_;
-    rcl_timer_t yaw_timer_;
-    rcl_timer_t loading_timer_;
 #if INTEGRATE
     rclc_publisher_init_default(&pose_publisher_, &node_, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Int32), "/pico/pose/level");
     rclc_timer_init_default(&pose_timer_, &support_, RCL_MS_TO_NS(1000), pose_timer_callback_);
@@ -127,7 +129,6 @@ rcl_ret_t ros2_generate_publisher()
     rclc_publisher_init_default(&loading_publisher_, &node_, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Int32), "/pico/loading/level");
     rclc_timer_init_default(&loading_timer_, &support_, RCL_MS_TO_NS(1000), loading_timer_callback_);
     rclc_executor_add_timer(&executor_, &loading_timer_);
-    rcl_timer_t stepper_timer_;
     rclc_publisher_init_default(&stepper_publisher_, &node_, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Float32), "/pico/stepper/position/debug");
     rclc_timer_init_default(&stepper_timer_, &support_, RCL_MS_TO_NS(1000), stepper_timer_callback_);
     rclc_executor_add_timer(&executor_, &stepper_timer_);
