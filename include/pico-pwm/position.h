@@ -29,7 +29,7 @@ void init_trigger();
 bool get_trigger();
 void goal_timer_callback_(rcl_timer_t *, int64_t);
 
-extern float stepper_bef_;
+extern float position_;
 extern rcl_publisher_t stepper_publisher_;     // 未使用 値をパブリッシュするときに使える用
 extern rcl_subscription_t stepper_subscriber_;
 extern std_msgs__msg__Float32 stepper_msg_;

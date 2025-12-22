@@ -8,7 +8,7 @@
 #include "std_msgs/msg/float32.h"
 #include "std_msgs/msg/bool.h"
 
-float stepper_bef_;
+float position_;
 rcl_publisher_t stepper_publisher_;     // 未使用 値をパブリッシュするときに使える用
 rcl_subscription_t stepper_subscriber_;
 std_msgs__msg__Float32 stepper_msg_;
@@ -54,19 +54,15 @@ void stepper_callback_(const void * msgin)
     {
         return;
     }
-    if(fabsf(stepper_bef_ - msg->data) > 1e-3f)
-    {
 #if STEPPER_DRIVE
-        //! 値の更新があったときだけ実行
-        set_step_rate(msg->data);
+    set_step_rate(msg->data);
 #endif
 #if STEPPER_UART
-        // const char *uart_message_ = "Hello, World!\r\n";
-        // uart_write_string(uart_message_);
-        uart_write_float(msg->data);
+    // const char *uart_message_ = "Hello, World!\r\n";
+    // uart_write_string(uart_message_);
+    uart_write_float(msg->data);
 #endif
-        stepper_bef_ = msg->data;
-    }
+    position_ = msg->data;
 }
 
 void stepper_timer_callback_(rcl_timer_t * timer, int64_t last_call_time)
@@ -74,7 +70,7 @@ void stepper_timer_callback_(rcl_timer_t * timer, int64_t last_call_time)
     (void) timer;
     (void) last_call_time;
     std_msgs__msg__Float32 pub_msg_;
-    pub_msg_.data = stepper_bef_;
+    pub_msg_.data = position_;
     rcl_ret_t rc = rcl_publish(&stepper_publisher_, &pub_msg_, NULL);
 }
 
@@ -111,6 +107,7 @@ void init_uart()
 
 void position_init()
 {
+    position_ = 0.0f;
 #if STEPPER_DRIVE
     ///// ステッピングモータ /////
     //! PWM 周波数と分解能の設定

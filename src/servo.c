@@ -32,7 +32,7 @@ std_msgs__msg__Int32 loading_msg_;
 
 uint16_t servo_deg2level(float degree)
 {
-    float servo_pulse_length = RESCALE(degree, SERVO_ANGLE_MAX, SERVO_ANGLE_MIN, SERVO_PULSE_LENGTH_MAX, SERVO_PULSE_LENGTH_MIN);
+    float servo_pulse_length = rescale(degree, SERVO_ANGLE_MIN, SERVO_ANGLE_MAX, SERVO_PULSE_LENGTH_MIN, SERVO_PULSE_LENGTH_MAX);
     float servo_duty = 100.0f * servo_pulse_length / (float) HZ2US(SERVO_HZ);
     return SERVO_RESOLUTION * (float) (servo_duty / (float) 100.0f);
 }
@@ -72,11 +72,12 @@ uint16_t set_servo_pwm(uint32_t pin, float degree)
     }
     uint16_t level;
 #if 0
-    degree_ = RESCALE(degree_, imax, imin, omax, omin);
+    degree_ = rescale(degree_, imin, imax, omin, omax);
     degree_ = (degree_ > omax) ? omax : (degree_ < omin) ? omin : degree_;
     level = servo_deg2level(degree_);
 #else
     degree_ = (degree > imax) ? imax : (degree_ < imin) ? imin : degree;
+    degree_ = rescale(degree_, imin, imax, omin, omax);
     level = servo_deg2level(degree_);
 #endif
     pwm_set_gpio_level(pin, level);

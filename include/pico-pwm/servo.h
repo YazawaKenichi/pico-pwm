@@ -46,7 +46,7 @@
 
 #define LOADING_IN_MIN 0
 #define LOADING_IN_MAX 1
-#define LOADING_OUT_MIN 10
+#define LOADING_OUT_MIN 0
 #define LOADING_OUT_MAX 130
 
 uint16_t servo_deg2level(float);

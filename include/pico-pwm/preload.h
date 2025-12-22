@@ -17,13 +17,14 @@
 #define UART_RX_PIN 17
 #define TRIGGER_PIN 19
 
-#define RESCALE(X, I_MAX, I_MIN, O_MAX, O_MIN) ((O_MAX - O_MIN) * (float) (((X) - I_MIN) / (float) (I_MAX - I_MIN)) + O_MIN)
 #define HZ2US(HERTZ) (1000 * 1000 * 1 / ((float) HERTZ))
 
 ///// デバッグ設定 /////
 #define INTEGRATE 1
 #define STEPPER_UART 1
 #define STEPPER_DRIVE 0
+
+float rescale(float, float, float, float, float);
 
 #endif
 

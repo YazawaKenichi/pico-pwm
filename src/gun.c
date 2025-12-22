@@ -17,7 +17,7 @@ std_msgs__msg__Float32 gun_r_msg_;
 
 float rs2205_adaptor(float ad)
 {
-    uint32_t high_time = RESCALE(ad, APPARENTLY_MAX, APPARENTLY_MIN, HIGH_TIME_MAX, HIGH_TIME_MIN);
+    uint32_t high_time = rescale(ad, APPARENTLY_MAX, APPARENTLY_MIN, HIGH_TIME_MAX, HIGH_TIME_MIN);
     //! ↓ すでに -100 ~ 100 でクリッピングされた値を引数にすれば正直ここは素通りするはず
     if(high_time > HIGH_TIME_MAX)
     {

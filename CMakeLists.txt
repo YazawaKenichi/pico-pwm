@@ -15,6 +15,7 @@ add_executable(pico_pwm
     src/gun.c
     src/led.c
     src/position.c
+    src/preload.c
     src/ros2.c
     src/servo.c
     external/microros_pico/pico_uart_transport.c
