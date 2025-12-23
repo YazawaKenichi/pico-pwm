@@ -28,6 +28,7 @@ void position_init();
 void init_trigger();
 bool get_trigger();
 void goal_timer_callback_(rcl_timer_t *, int64_t);
+void init_goal();
 
 extern float position_;
 extern rcl_publisher_t stepper_publisher_;     // 未使用 値をパブリッシュするときに使える用

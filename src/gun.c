@@ -1,5 +1,6 @@
 #include "gun.h"
 
+#include "pico/stdlib.h"
 #include "hardware/clocks.h"
 
 #include <rcl/rcl.h>

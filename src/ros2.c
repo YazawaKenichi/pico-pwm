@@ -49,7 +49,7 @@ void ros2_init()
 
 int ros2_spin()
 {
-    set_loading(get_trigger());
+    // set_loading(get_trigger());
     rclc_executor_spin_some(&executor_, RCL_MS_TO_NS(1));
     return 0;
 }
@@ -90,7 +90,7 @@ rcl_ret_t ros2_generate_subscriber()
     rclc_subscription_init_default(&yaw_subscriber_, &node_, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Float32), "/pico/yaw/deg");
     rclc_executor_add_subscription(&executor_, &yaw_subscriber_, &yaw_msg_, yaw_callback_, ON_NEW_DATA);
 #endif
-    rclc_subscription_init_default(&loading_subscriber_, &node_, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Float32), "/pico/loading/deg");
+    rclc_subscription_init_default(&loading_subscriber_, &node_, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Bool), "/pico/trigger");
     rclc_executor_add_subscription(&executor_, &loading_subscriber_, &loading_msg_, loading_callback_, ON_NEW_DATA);
 
     return rc;
@@ -126,7 +126,7 @@ rcl_ret_t ros2_generate_publisher()
     rclc_timer_init_default(&yaw_timer_, &support_, RCL_MS_TO_NS(1000), yaw_timer_callback_);
     rclc_executor_add_timer(&executor_, &yaw_timer_);
 #endif //! INTEGRATE
-    rclc_publisher_init_default(&loading_publisher_, &node_, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Int32), "/pico/loading/level");
+    rclc_publisher_init_default(&loading_publisher_, &node_, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Bool), "/pico/debug/trigger");
     rclc_timer_init_default(&loading_timer_, &support_, RCL_MS_TO_NS(1000), loading_timer_callback_);
     rclc_executor_add_timer(&executor_, &loading_timer_);
     rclc_publisher_init_default(&stepper_publisher_, &node_, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Float32), "/pico/stepper/position/debug");

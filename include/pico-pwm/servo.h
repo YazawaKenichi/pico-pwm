@@ -8,6 +8,7 @@
 
 #include <rcl/rcl.h>
 #include "std_msgs/msg/int32.h"
+#include "std_msgs//msg/bool.h"
 #include "geometry_msgs/msg/vector3.h"
 
 ///// 砲塔サーボ /////
@@ -85,7 +86,7 @@ extern std_msgs__msg__Int32 yaw_msg_;
 extern uint16_t loading_level_;
 extern rcl_publisher_t loading_publisher_;
 extern rcl_subscription_t loading_subscriber_;
-extern std_msgs__msg__Int32 loading_msg_;
+extern std_msgs__msg__Bool loading_msg_;
 
 #endif
 

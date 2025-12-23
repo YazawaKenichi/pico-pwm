@@ -28,7 +28,7 @@ std_msgs__msg__Int32 yaw_msg_;
 uint16_t loading_level_;
 rcl_publisher_t loading_publisher_;
 rcl_subscription_t loading_subscriber_;
-std_msgs__msg__Int32 loading_msg_;
+std_msgs__msg__Bool loading_msg_;
 
 uint16_t servo_deg2level(float degree)
 {
@@ -166,24 +166,24 @@ void yaw_timer_callback_(rcl_timer_t * timer, int64_t last_call_time)
 
 void loading_callback_(const void * msgin)
 {
-    const std_msgs__msg__Float32 * msg = (const std_msgs__msg__Float32 *) msgin;
+    const std_msgs__msg__Bool * msg = (const std_msgs__msg__Bool *) msgin;
     if(msg == NULL)
     {
         return;
     }
-    loading_level_ = set_servo_pwm(LOADING_PIN, msg->data);
+    loading_level_ = set_servo_pwm(LOADING_PIN, msg->data ? LOADING_OUT_MIN : LOADING_OUT_MAX);
 }
 
 void set_loading(bool tf)
 {
-    loading_level_ = set_servo_pwm(LOADING_PIN, tf ? LOADING_OUT_MIN : LOADING_OUT_MAX);
+    // loading_level_ = set_servo_pwm(LOADING_PIN, tf ? LOADING_OUT_MIN : LOADING_OUT_MAX);
 }
 
 void loading_timer_callback_(rcl_timer_t * timer, int64_t last_call_time)
 {
     (void) timer;
     (void) last_call_time;
-    std_msgs__msg__Int32 pub_msg_;
+    std_msgs__msg__Bool pub_msg_;
     pub_msg_.data = loading_level_;
     rcl_ret_t rc = rcl_publish(&loading_publisher_, &pub_msg_, NULL);
 }
